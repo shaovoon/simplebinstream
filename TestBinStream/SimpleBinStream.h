@@ -4,6 +4,7 @@
 //
 // http://opensource.org/licenses/MIT
 //
+// version 0.9.2   : Optimize mem_istream constructor for const char*
 
 #ifndef MiniBinStream_H
 #define MiniBinStream_H
@@ -126,8 +127,7 @@ public:
 		m_index = 0;
 		m_vec.clear();
 		m_vec.reserve(size);
-		for (size_t i = 0; i<size; ++i)
-			m_vec.push_back(mem[i]);
+		m_vec.assign(mem, mem + size);
 	}
 	void close()
 	{
