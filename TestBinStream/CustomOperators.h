@@ -14,30 +14,22 @@ struct Product
 
 simple::mem_istream& operator >> (simple::mem_istream& istm, Product& val)
 {
-	istm >> val.product_name >> val.price >> val.qty;
-
-	return istm;
+	return istm >> val.product_name >> val.price >> val.qty;
 }
 
 simple::file_istream& operator >> (simple::file_istream& istm, Product& val)
 {
-	istm >> val.product_name >> val.price >> val.qty;
-
-	return istm;
+	return istm >> val.product_name >> val.price >> val.qty;
 }
 
 simple::mem_ostream& operator << (simple::mem_ostream& ostm, const Product& val)
 {
-	ostm << val.product_name << val.price << val.qty;
-
-	return ostm;
+	return ostm << val.product_name << val.price << val.qty;
 }
 
 simple::file_ostream& operator << (simple::file_ostream& ostm, const Product& val)
 {
-	ostm << val.product_name << val.price << val.qty;
-
-	return ostm;
+	return ostm << val.product_name << val.price << val.qty;
 }
 
 simple::mem_istream& operator >> (simple::mem_istream& istm, std::vector<Product>& vec)
