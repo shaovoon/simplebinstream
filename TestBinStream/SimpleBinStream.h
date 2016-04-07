@@ -5,6 +5,7 @@
 // http://opensource.org/licenses/MIT
 //
 // version 0.9.2   : Optimize mem_istream constructor for const char*
+// version 0.9.3   : Optimize mem_ostream vector insert
 
 #ifndef MiniBinStream_H
 #define MiniBinStream_H
@@ -351,8 +352,7 @@ private:
 template<>
 void mem_ostream::write(const std::vector<char>& vec)
 {
-	for(size_t i=0; i<vec.size(); ++i)
-		m_vec.push_back(vec[i]);
+	m_vec.insert(m_vec.end(), vec.begin(), vec.end());
 }
 
 template<typename T>
