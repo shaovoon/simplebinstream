@@ -17,6 +17,11 @@ simple::mem_istream& operator >> (simple::mem_istream& istm, Product& val)
 	return istm >> val.product_name >> val.price >> val.qty;
 }
 
+simple::ptr_istream& operator >> (simple::ptr_istream& istm, Product& val)
+{
+	return istm >> val.product_name >> val.price >> val.qty;
+}
+
 simple::file_istream& operator >> (simple::file_istream& istm, Product& val)
 {
 	return istm >> val.product_name >> val.price >> val.qty;
@@ -41,6 +46,24 @@ simple::mem_istream& operator >> (simple::mem_istream& istm, std::vector<Product
 		return istm;
 
 	for(int i=0; i<size; ++i)
+	{
+		Product product;
+		istm >> product;
+		vec.push_back(product);
+	}
+
+	return istm;
+}
+
+simple::ptr_istream& operator >> (simple::ptr_istream& istm, std::vector<Product>& vec)
+{
+	int size = 0;
+	istm >> size;
+
+	if (size <= 0)
+		return istm;
+
+	for (int i = 0; i<size; ++i)
 	{
 		Product product;
 		istm >> product;

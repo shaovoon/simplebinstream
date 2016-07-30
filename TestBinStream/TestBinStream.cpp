@@ -6,10 +6,13 @@
 #include "CustomOperators.h"
 
 void TestMem();
+void TestMemPtr();
 void TestFile();
 void TestMemCustomOperatorsOnVec();
+void TestMemPtrCustomOperatorsOnVec();
 void TestFileCustomOperatorsOnVec();
 void TestMemCustomOperators();
+void TestMemPtrCustomOperators();
 void TestFileCustomOperators();
 
 using namespace std;
@@ -17,13 +20,19 @@ int main(int argc, char* argv[])
 {
 	TestMem();
 	std::cout << "=============" << std::endl;
+	TestMemPtr();
+	std::cout << "=============" << std::endl;
 	TestFile();
 	std::cout << "=============" << std::endl;
 	TestMemCustomOperatorsOnVec();
 	std::cout << "=============" << std::endl;
+	TestMemPtrCustomOperatorsOnVec();
+	std::cout << "=============" << std::endl;
 	TestFileCustomOperatorsOnVec();
 	std::cout << "=============" << std::endl;
 	TestMemCustomOperators();
+	std::cout << "=============" << std::endl;
+	TestMemPtrCustomOperators();
 	std::cout << "=============" << std::endl;
 	TestFileCustomOperators();
 	std::cout << "=============" << std::endl;
@@ -36,6 +45,19 @@ void TestMem()
 	out << 23 << 24 << "Hello world!";
 
 	simple::mem_istream in(out.get_internal_vec());
+	int num1 = 0, num2 = 0;
+	std::string str;
+	in >> num1 >> num2 >> str;
+
+	cout << num1 << "," << num2 << "," << str << endl;
+}
+
+void TestMemPtr()
+{
+	simple::mem_ostream out;
+	out << 23 << 24 << "Hello world!";
+
+	simple::ptr_istream in(out.get_internal_vec());
 	int num1 = 0, num2 = 0;
 	std::string str;
 	in >> num1 >> num2 >> str;
@@ -74,6 +96,22 @@ void TestMemCustomOperatorsOnVec()
 	print_products(vec_dest);
 }
 
+void TestMemPtrCustomOperatorsOnVec()
+{
+	std::vector<Product> vec_src;
+	vec_src.push_back(Product("Book", 10.0f, 50));
+	vec_src.push_back(Product("Phone", 25.0f, 20));
+	vec_src.push_back(Product("Pillow", 8.0f, 10));
+	simple::mem_ostream out;
+	out << vec_src;
+
+	simple::ptr_istream in(out.get_internal_vec());
+	std::vector<Product> vec_dest;
+	in >> vec_dest;
+
+	print_products(vec_dest);
+}
+
 void TestFileCustomOperatorsOnVec()
 {
 	std::vector<Product> vec_src;
@@ -99,6 +137,20 @@ void TestMemCustomOperators()
 	out << Product("Phone", 25.0f, 20);
 
 	simple::mem_istream in(out.get_internal_vec());
+	Product product;
+	in >> product;
+	print_product(product);
+	in >> product;
+	print_product(product);
+}
+
+void TestMemPtrCustomOperators()
+{
+	simple::mem_ostream out;
+	out << Product("Book", 10.0f, 50);
+	out << Product("Phone", 25.0f, 20);
+
+	simple::ptr_istream in(out.get_internal_vec());
 	Product product;
 	in >> product;
 	print_product(product);

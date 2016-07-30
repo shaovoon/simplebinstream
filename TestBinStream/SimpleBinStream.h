@@ -1,11 +1,12 @@
 // The MIT License (MIT)
 // Simplistic Binary Streams 0.9
-// Copyright (C) 2014, by Wong Shao Voon (shaovoon@yahoo.com)
+// Copyright (C) 2014 - 2016, by Wong Shao Voon (shaovoon@yahoo.com)
 //
 // http://opensource.org/licenses/MIT
 //
 // version 0.9.2   : Optimize mem_istream constructor for const char*
 // version 0.9.3   : Optimize mem_ostream vector insert
+// version 0.9.4   : New ptr_istream class
 
 #ifndef MiniBinStream_H
 #define MiniBinStream_H
@@ -244,6 +245,143 @@ mem_istream& operator >> (mem_istream& istm, std::string& val)
 	istm.read(size);
 
 	if(size<=0)
+		return istm;
+
+	istm.read(val, size);
+
+	return istm;
+}
+
+class ptr_istream
+{
+public:
+	ptr_istream() : m_arr(NULL), m_size(0), m_index(0) {}
+	ptr_istream(const char * mem, size_t size)
+	{
+		open(mem, size);
+	}
+	ptr_istream(const std::vector<char>& vec)
+	{
+		m_index = 0;
+		m_arr = vec.data();
+		m_size = vec.size();
+	}
+	void open(const char * mem, size_t size)
+	{
+		m_index = 0;
+		m_arr = mem;
+		m_size = size;
+	}
+	void close()
+	{
+		m_arr = NULL; m_size = 0; m_index = 0;
+	}
+	bool eof() const
+	{
+		return m_index >= m_size;
+	}
+	std::ifstream::pos_type tellg()
+	{
+		return m_index;
+	}
+	bool seekg(size_t pos)
+	{
+		if (pos<m_size)
+			m_index = pos;
+		else
+			return false;
+
+		return true;
+	}
+	bool seekg(std::streamoff offset, std::ios_base::seekdir way)
+	{
+		if (way == std::ios_base::beg && offset < m_size)
+			m_index = offset;
+		else if (way == std::ios_base::cur && (m_index + offset) < m_size)
+			m_index += offset;
+		else if (way == std::ios_base::end && (m_size + offset) < m_size)
+			m_index = m_size + offset;
+		else
+			return false;
+
+		return true;
+	}
+
+	template<typename T>
+	void read(T& t)
+	{
+		if (eof())
+			throw std::runtime_error("Premature end of array!");
+
+		if ((m_index + sizeof(T)) > m_size)
+			throw std::runtime_error("Premature end of array!");
+
+		std::memcpy(reinterpret_cast<void*>(&t), &m_arr[m_index], sizeof(T));
+
+		m_index += sizeof(T);
+	}
+
+	void read(char* p, size_t size)
+	{
+		if (eof())
+			throw std::runtime_error("Premature end of array!");
+
+		if ((m_index + size) > m_size)
+			throw std::runtime_error("Premature end of array!");
+
+		std::memcpy(reinterpret_cast<void*>(p), &m_arr[m_index], size);
+
+		m_index += size;
+	}
+
+	void read(std::string& str, const unsigned int size)
+	{
+		if (eof())
+			throw std::runtime_error("Premature end of array!");
+
+		if ((m_index + str.size()) > m_size)
+			throw std::runtime_error("Premature end of array!");
+
+		str.assign(&m_arr[m_index], size);
+
+		m_index += str.size();
+	}
+
+private:
+	const char* m_arr;
+	size_t m_size;
+	size_t m_index;
+};
+
+template<>
+void ptr_istream::read(std::vector<char>& vec)
+{
+	if (eof())
+		throw std::runtime_error("Premature end of array!");
+
+	if ((m_index + vec.size()) > m_size)
+		throw std::runtime_error("Premature end of array!");
+
+	std::memcpy(reinterpret_cast<void*>(&vec[0]), &m_arr[m_index], vec.size());
+
+	m_index += vec.size();
+}
+
+template<typename T>
+ptr_istream& operator >> (ptr_istream& istm, T& val)
+{
+	istm.read(val);
+
+	return istm;
+}
+
+template<>
+ptr_istream& operator >> (ptr_istream& istm, std::string& val)
+{
+	int size = 0;
+	istm.read(size);
+
+	if (size <= 0)
 		return istm;
 
 	istm.read(val, size);
