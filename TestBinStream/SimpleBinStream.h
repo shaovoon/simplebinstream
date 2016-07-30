@@ -197,6 +197,19 @@ public:
 		m_index += size;
 	}
 
+	void read(std::string& str, const unsigned int size)
+	{
+		if (eof())
+			throw std::runtime_error("Premature end of array!");
+
+		if ((m_index + str.size()) > m_vec.size())
+			throw std::runtime_error("Premature end of array!");
+
+		str.assign(&m_vec[m_index], size);
+
+		m_index += str.size();
+	}
+
 private:
 	std::vector<char> m_vec;
 	size_t m_index;
@@ -233,9 +246,7 @@ mem_istream& operator >> (mem_istream& istm, std::string& val)
 	if(size<=0)
 		return istm;
 
-	std::vector<char> vec((size_t)size);
-	istm.read(vec);
-	val.assign(&vec[0], (size_t)size);
+	istm.read(val, size);
 
 	return istm;
 }
