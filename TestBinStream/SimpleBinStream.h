@@ -7,6 +7,7 @@
 // version 0.9.2   : Optimize mem_istream constructor for const char*
 // version 0.9.3   : Optimize mem_ostream vector insert
 // version 0.9.4   : New ptr_istream class
+// version 0.9.5   : Add Endianness Swap with compile time check
 
 #ifndef MiniBinStream_H
 #define MiniBinStream_H
@@ -17,10 +18,116 @@
 #include <cstring>
 #include <stdexcept>
 #include <iostream>
+#include <stdint.h>
 
 namespace simple
 {
+	enum class Endian
+	{
+		Big,
+		Little
+	};
+	using BigEndian = std::integral_constant<Endian, Endian::Big>;
+	using LittleEndian = std::integral_constant<Endian, Endian::Little>;
 
+	template<typename T>
+	void swap(T& val, std::true_type)
+	{
+		// same endian so do nothing.
+	}
+
+	template<typename T>
+	void swap(T& val, std::false_type)
+	{
+		std::is_integral<T> is_integral_type;
+		swap_if_integral(val, is_integral_type);
+	}
+
+	template<typename T>
+	void swap_if_integral(T& val, std::false_type)
+	{
+		// T is not integral so do nothing
+	}
+
+	template<typename T>
+	void swap_if_integral(T& val, std::true_type)
+	{
+		swap_endian<T, sizeof(T)>()(val);
+	}
+
+	template<typename T, size_t N>
+	struct swap_endian
+	{
+		void operator()(T& ui)
+		{
+		}
+	};
+
+	template<typename T>
+	struct swap_endian<T, 8>
+	{
+		void operator()(T& ui)
+		{
+			union EightBytes
+			{
+				T ui;
+				uint8_t arr[8];
+			};
+
+			EightBytes fb;
+			fb.ui = ui;
+			// swap the endian
+			std::swap(fb.arr[0], fb.arr[7]);
+			std::swap(fb.arr[1], fb.arr[6]);
+			std::swap(fb.arr[2], fb.arr[5]);
+			std::swap(fb.arr[3], fb.arr[4]);
+
+			ui = fb.ui;
+		}
+	};
+
+	template<typename T>
+	struct swap_endian<T, 4>
+	{
+		void operator()(T& ui)
+		{
+			union FourBytes
+			{
+				T ui;
+				uint8_t arr[4];
+			};
+
+			FourBytes fb;
+			fb.ui = ui;
+			// swap the endian
+			std::swap(fb.arr[0], fb.arr[3]);
+			std::swap(fb.arr[1], fb.arr[2]);
+
+			ui = fb.ui;
+		}
+	};
+
+	template<typename T>
+	struct swap_endian<T, 2>
+	{
+		void operator()(T& ui)
+		{
+			union TwoBytes
+			{
+				T ui;
+				uint8_t arr[2];
+			};
+
+			TwoBytes fb;
+			fb.ui = ui;
+			// swap the endian
+			std::swap(fb.arr[0], fb.arr[1]);
+
+			ui = fb.ui;
+		}
+	};
+
+template<typename same_endian_type>
 class file_istream
 {
 public:
@@ -65,6 +172,15 @@ public:
 		{
 			throw std::runtime_error("Read Error!");
 		}
+		simple::swap(t, m_same_type);
+	}
+	template<>
+	void read(typename std::vector<char>& vec)
+	{
+		if (m_istm.read(reinterpret_cast<char*>(&vec[0]), vec.size()).bad())
+		{
+			throw std::runtime_error("Read Error!");
+		}
 	}
 	void read(char* p, size_t size)
 	{
@@ -75,27 +191,19 @@ public:
 	}
 private:
 	std::ifstream m_istm;
+	same_endian_type m_same_type;
 };
 
-template<>
-void file_istream::read(std::vector<char>& vec)
-{
-	if(m_istm.read(reinterpret_cast<char*>(&vec[0]), vec.size()).bad())
-	{
-		throw std::runtime_error("Read Error!");
-	}
-}
-
-template<typename T>
-file_istream& operator >> (file_istream& istm, T& val)
+template<typename same_endian_type, typename T>
+typename file_istream<same_endian_type>& operator >> (typename file_istream<same_endian_type>& istm, T& val)
 {
 	istm.read(val);
 
 	return istm;
 }
 
-template<>
-file_istream& operator >> (file_istream& istm, std::string& val)
+template<typename same_endian_type>
+typename file_istream<same_endian_type>& operator >> (typename file_istream<same_endian_type>& istm, std::string& val)
 {
 	int size = 0;
 	istm.read(size);
@@ -110,6 +218,7 @@ file_istream& operator >> (file_istream& istm, std::string& val)
 	return istm;
 }
 
+template<typename same_endian_type>
 class mem_istream
 {
 public:
@@ -182,7 +291,23 @@ public:
 
 		std::memcpy(reinterpret_cast<void*>(&t), &m_vec[m_index], sizeof(T));
 
+		simple::swap(t, m_same_type);
+
 		m_index += sizeof(T);
+	}
+
+	template<>
+	void read(typename std::vector<char>& vec)
+	{
+		if (eof())
+			throw std::runtime_error("Premature end of array!");
+
+		if ((m_index + vec.size()) > m_vec.size())
+			throw std::runtime_error("Premature end of array!");
+
+		std::memcpy(reinterpret_cast<void*>(&vec[0]), &m_vec[m_index], vec.size());
+
+		m_index += vec.size();
 	}
 
 	void read(char* p, size_t size)
@@ -214,32 +339,19 @@ public:
 private:
 	std::vector<char> m_vec;
 	size_t m_index;
+	same_endian_type m_same_type;
 };
 
-template<>
-void mem_istream::read(std::vector<char>& vec)
-{
-	if(eof())
-		throw std::runtime_error("Premature end of array!");
-		
-	if((m_index + vec.size()) > m_vec.size())
-		throw std::runtime_error("Premature end of array!");
-
-	std::memcpy(reinterpret_cast<void*>(&vec[0]), &m_vec[m_index], vec.size());
-
-	m_index += vec.size();
-}
-
-template<typename T>
-mem_istream& operator >> (mem_istream& istm, T& val)
+template<typename same_endian_type, typename T>
+typename mem_istream<same_endian_type>& operator >> (typename mem_istream<same_endian_type>& istm, T& val)
 {
 	istm.read(val);
 
 	return istm;
 }
 
-template<>
-mem_istream& operator >> (mem_istream& istm, std::string& val)
+template<typename same_endian_type>
+mem_istream<same_endian_type>& operator >> (mem_istream<same_endian_type>& istm, std::string& val)
 {
 	int size = 0;
 	istm.read(size);
@@ -252,6 +364,7 @@ mem_istream& operator >> (mem_istream& istm, std::string& val)
 	return istm;
 }
 
+template<typename same_endian_type>
 class ptr_istream
 {
 public:
@@ -318,7 +431,23 @@ public:
 
 		std::memcpy(reinterpret_cast<void*>(&t), &m_arr[m_index], sizeof(T));
 
+		simple::swap(t, m_same_type);
+
 		m_index += sizeof(T);
+	}
+
+	template<>
+	void read(typename std::vector<char>& vec)
+	{
+		if (eof())
+			throw std::runtime_error("Premature end of array!");
+
+		if ((m_index + vec.size()) > m_size)
+			throw std::runtime_error("Premature end of array!");
+
+		std::memcpy(reinterpret_cast<void*>(&vec[0]), &m_arr[m_index], vec.size());
+
+		m_index += vec.size();
 	}
 
 	void read(char* p, size_t size)
@@ -351,32 +480,20 @@ private:
 	const char* m_arr;
 	size_t m_size;
 	size_t m_index;
+	same_endian_type m_same_type;
 };
 
-template<>
-void ptr_istream::read(std::vector<char>& vec)
-{
-	if (eof())
-		throw std::runtime_error("Premature end of array!");
 
-	if ((m_index + vec.size()) > m_size)
-		throw std::runtime_error("Premature end of array!");
-
-	std::memcpy(reinterpret_cast<void*>(&vec[0]), &m_arr[m_index], vec.size());
-
-	m_index += vec.size();
-}
-
-template<typename T>
-ptr_istream& operator >> (ptr_istream& istm, T& val)
+template<typename same_endian_type, typename T>
+typename ptr_istream<same_endian_type>& operator >> (typename ptr_istream<same_endian_type>& istm, T& val)
 {
 	istm.read(val);
 
 	return istm;
 }
 
-template<>
-ptr_istream& operator >> (ptr_istream& istm, std::string& val)
+template<typename same_endian_type>
+typename ptr_istream<same_endian_type>& operator >> (typename ptr_istream<same_endian_type>& istm, std::string& val)
 {
 	int size = 0;
 	istm.read(size);
@@ -389,6 +506,7 @@ ptr_istream& operator >> (ptr_istream& istm, std::string& val)
 	return istm;
 }
 
+template<typename same_endian_type>
 class file_ostream
 {
 public:
@@ -416,7 +534,14 @@ public:
 	template<typename T>
 	void write(const T& t)
 	{
-		m_ostm.write(reinterpret_cast<const char*>(&t), sizeof(T));
+		T t2 = t;
+		simple::swap(t2, m_same_type);
+		m_ostm.write(reinterpret_cast<const char*>(&t2), sizeof(T));
+	}
+	template<>
+	void write(const std::vector<char>& vec)
+	{
+		m_ostm.write(reinterpret_cast<const char*>(&vec[0]), vec.size());
 	}
 	void write(const char* p, size_t size)
 	{
@@ -425,25 +550,19 @@ public:
 
 private:
 	std::ofstream m_ostm;
-
+	same_endian_type m_same_type;
 };
 
-template<>
-void file_ostream::write(const std::vector<char>& vec)
-{
-	m_ostm.write(reinterpret_cast<const char*>(&vec[0]), vec.size());
-}
-
-template<typename T>
-file_ostream& operator << (file_ostream& ostm, const T& val)
+template<typename same_endian_type, typename T>
+file_ostream<same_endian_type>& operator << (file_ostream<same_endian_type>& ostm, const T& val)
 {
 	ostm.write(val);
 
 	return ostm;
 }
 
-template<>
-file_ostream& operator << (file_ostream& ostm, const std::string& val)
+template<typename same_endian_type>
+typename file_ostream<same_endian_type>& operator << (typename file_ostream<same_endian_type>& ostm, const std::string& val)
 {
 	int size = val.size();
 	ostm.write(size);
@@ -456,7 +575,8 @@ file_ostream& operator << (file_ostream& ostm, const std::string& val)
 	return ostm;
 }
 
-file_ostream& operator << (file_ostream& ostm, const char* val)
+template<typename same_endian_type>
+typename file_ostream<same_endian_type>& operator << (typename file_ostream<same_endian_type>& ostm, const char* val)
 {
 	int size = std::strlen(val);
 	ostm.write(size);
@@ -469,6 +589,7 @@ file_ostream& operator << (file_ostream& ostm, const char* val)
 	return ostm;
 }
 
+template<typename same_endian_type>
 class mem_ostream
 {
 public:
@@ -485,8 +606,15 @@ public:
 	void write(const T& t)
 	{
 		std::vector<char> vec(sizeof(T));
-		std::memcpy(reinterpret_cast<void*>(&vec[0]), reinterpret_cast<const void*>(&t), sizeof(T));
+		T t2 = t;
+		simple::swap(t2, m_same_type);
+		std::memcpy(reinterpret_cast<void*>(&vec[0]), reinterpret_cast<const void*>(&t2), sizeof(T));
 		write(vec);
+	}
+	template<>
+	void write(const std::vector<char>& vec)
+	{
+		m_vec.insert(m_vec.end(), vec.begin(), vec.end());
 	}
 	void write(const char* p, size_t size)
 	{
@@ -496,24 +624,19 @@ public:
 
 private:
 	std::vector<char> m_vec;
+	same_endian_type m_same_type;
 };
 
-template<>
-void mem_ostream::write(const std::vector<char>& vec)
-{
-	m_vec.insert(m_vec.end(), vec.begin(), vec.end());
-}
-
-template<typename T>
-mem_ostream& operator << (mem_ostream& ostm, const T& val)
+template<typename same_endian_type, typename T>
+typename mem_ostream<same_endian_type>& operator << (typename mem_ostream<same_endian_type>& ostm, const T& val)
 {
 	ostm.write(val);
 
 	return ostm;
 }
 
-template<>
-mem_ostream& operator << (mem_ostream& ostm, const std::string& val)
+template<typename same_endian_type>
+typename mem_ostream<same_endian_type>& operator << (typename mem_ostream<same_endian_type>& ostm, const std::string& val)
 {
 	int size = val.size();
 	ostm.write(size);
@@ -526,7 +649,8 @@ mem_ostream& operator << (mem_ostream& ostm, const std::string& val)
 	return ostm;
 }
 
-mem_ostream& operator << (mem_ostream& ostm, const char* val)
+template<typename same_endian_type>
+typename mem_ostream<same_endian_type>& operator << (typename mem_ostream<same_endian_type>& ostm, const char* val)
 {
 	int size = std::strlen(val);
 	ostm.write(size);
