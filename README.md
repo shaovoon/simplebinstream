@@ -71,4 +71,113 @@ in >> num1 >> num2 >> str;
 cout << num1 << "," << num2 << "," << str << endl;
 ```
 
+Swap function is listed below.
+
+```cpp
+enum class Endian
+{
+    Big,
+    Little
+};
+using BigEndian = std::integral_constant<Endian, Endian::Big>;
+using LittleEndian = std::integral_constant<Endian, Endian::Little>;
+
+template<typename T>
+void swap(T& val, std::true_type)
+{
+    // same endian so do nothing.
+}
+
+template<typename T>
+void swap(T& val, std::false_type)
+{
+    std::is_integral<T> is_integral_type;
+    swap_if_integral(val, is_integral_type);
+}
+
+template<typename T>
+void swap_if_integral(T& val, std::false_type)
+{
+    // T is not integral so do nothing
+}
+
+template<typename T>
+void swap_if_integral(T& val, std::true_type)
+{
+    swap_endian<T, sizeof(T)>()(val);
+}
+
+template<typename T, size_t N>
+struct swap_endian
+{
+    void operator()(T& ui)
+    {
+    }
+};
+
+template<typename T>
+struct swap_endian<T, 8>
+{
+    void operator()(T& ui)
+    {
+        union EightBytes
+        {
+            T ui;
+            uint8_t arr[8];
+        };
+
+        EightBytes fb;
+        fb.ui = ui;
+        // swap the endian
+        std::swap(fb.arr[0], fb.arr[7]);
+        std::swap(fb.arr[1], fb.arr[6]);
+        std::swap(fb.arr[2], fb.arr[5]);
+        std::swap(fb.arr[3], fb.arr[4]);
+
+        ui = fb.ui;
+    }
+};
+
+template<typename T>
+struct swap_endian<T, 4>
+{
+    void operator()(T& ui)
+    {
+        union FourBytes
+        {
+            T ui;
+            uint8_t arr[4];
+        };
+
+        FourBytes fb;
+        fb.ui = ui;
+        // swap the endian
+        std::swap(fb.arr[0], fb.arr[3]);
+        std::swap(fb.arr[1], fb.arr[2]);
+
+        ui = fb.ui;
+    }
+};
+
+template<typename T>
+struct swap_endian<T, 2>
+{
+    void operator()(T& ui)
+    {
+        union TwoBytes
+        {
+            T ui;
+            uint8_t arr[2];
+        };
+
+        TwoBytes fb;
+        fb.ui = ui;
+        // swap the endian
+        std::swap(fb.arr[0], fb.arr[1]);
+
+        ui = fb.ui;
+    }
+};
+```
+
 [CodeProject Tutorial](http://www.codeproject.com/Tips/808776/Cplusplus-Simplistic-Binary-Streams)
