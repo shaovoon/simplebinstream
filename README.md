@@ -44,6 +44,25 @@ Requires C++11 compiler and standard library now.
 The classes are templates now. 
 
 ```cpp
+template<typename same_endian_type>
+class file_istream {...}
+
+template<typename same_endian_type>
+class mem_istream  {...}
+
+template<typename same_endian_type>
+class ptr_istream  {...}
+
+template<typename same_endian_type>
+class file_ostream {...}
+
+template<typename same_endian_type>
+class mem_ostream  {...}
+```
+
+How to pass in same_endian_type to the class? Use std::is_same<>.
+
+```cpp
 // 1st parameter is data endian and 2 parameter is platform endian, if they are different, swap.
 using same_endian_type = std::is_same<simple::BigEndian, simple::LittleEndian>;
 simple::mem_ostream<same_endian_type> out;
@@ -71,7 +90,16 @@ in >> num1 >> num2 >> str;
 cout << num1 << "," << num2 << "," << str << endl;
 ```
 
-Swap function is listed below.
+## Advantages of compile-time check
+
+* For same_endian_type = true_type, the swap function is a empty function which is optimised away.
+* For same_endian_type = false_type, the swapping is done without any prior runtime check cost.
+
+## Disadvantages of compile-time check
+
+* Cannot parse file/data which is sometime different endian. I believe this scenario is rare.
+
+Swap functions are listed below.
 
 ```cpp
 enum class Endian
