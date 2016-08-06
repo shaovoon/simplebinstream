@@ -26,3 +26,7 @@
 *.exe
 *.out
 *.app
+
+# Visual Studio files
+*.suo
+*.sdf
