@@ -18,13 +18,13 @@ void TestFileCustomOperators();
 using namespace std;
 int main(int argc, char* argv[])
 {
-	TestMem();
+	/*TestMem();
 	std::cout << "=============" << std::endl;
 	TestMemPtr();
-	std::cout << "=============" << std::endl;
+	std::cout << "=============" << std::endl;*/
 	TestFile();
 	std::cout << "=============" << std::endl;
-	TestMemCustomOperatorsOnVec();
+	/*TestMemCustomOperatorsOnVec();
 	std::cout << "=============" << std::endl;
 	TestMemPtrCustomOperatorsOnVec();
 	std::cout << "=============" << std::endl;
@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 	TestMemCustomOperators();
 	std::cout << "=============" << std::endl;
 	TestMemPtrCustomOperators();
-	std::cout << "=============" << std::endl;
+	std::cout << "=============" << std::endl;*/
 	TestFileCustomOperators();
 	std::cout << "=============" << std::endl;
 	return 0;

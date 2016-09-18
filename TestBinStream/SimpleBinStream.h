@@ -8,6 +8,7 @@
 // version 0.9.3   : Optimize mem_ostream vector insert
 // version 0.9.4   : New ptr_istream class
 // version 0.9.5   : Add Endianness Swap with compile time check
+// version 0.9.6   : Using C File APIs, instead of STL file streams
 
 #ifndef MiniBinStream_H
 #define MiniBinStream_H
@@ -19,6 +20,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <stdint.h>
+#include <cstdio>
 
 namespace simple
 {
@@ -131,66 +133,88 @@ template<typename same_endian_type>
 class file_istream
 {
 public:
-	file_istream() {}
-	file_istream(const char * file) 
+	file_istream() : input_file_ptr(nullptr), file_size(0L), read_length(0L) {}
+	file_istream(const char * file) : input_file_ptr(nullptr), file_size(0L), read_length(0L)
 	{
 		open(file);
 	}
 	void open(const char * file)
 	{
-		m_istm.open(file, std::ios_base::in | std::ios_base::binary);
+		input_file_ptr = std::fopen(file, "rb");
+		compute_length();
 	}
 	void close()
 	{
-		m_istm.close();
+		fclose(input_file_ptr);
+		input_file_ptr = nullptr;
 	}
 	bool is_open()
 	{
-		return m_istm.is_open();
+		return (input_file_ptr != nullptr);
 	}
-	bool eof() const
+	long file_length() const
 	{
-		return m_istm.eof();
+		return file_size;
 	}
-	std::ifstream::pos_type tellg()
+	// http://www.cplusplus.com/reference/cstdio/feof/
+	// stream's internal position indicator may point to the end-of-file for the 
+	// next operation, but still, the end-of-file indicator may not be set until 
+	// an operation attempts to read at that point.
+	bool eof() const // not using feof(), see above
 	{
-		return m_istm.tellg();
+		return read_length >= file_size;
 	}
-	void seekg (std::streampos pos)
+	long tellg() const
 	{
-		m_istm.seekg(pos);
+		return std::ftell(input_file_ptr);
 	}
-	void seekg (std::streamoff offset, std::ios_base::seekdir way)
+	void seekg (long pos)
 	{
-		m_istm.seekg(offset, way);
+		std::fseek(input_file_ptr, pos, SEEK_SET);
+	}
+	void seekg (long offset, int way)
+	{
+		std::fseek(input_file_ptr, offset, way);
 	}
 
 	template<typename T>
 	void read(T& t)
 	{
-		if(m_istm.read(reinterpret_cast<char*>(&t), sizeof(T)).bad())
+		if(std::fread(reinterpret_cast<void*>(&t), sizeof(T), 1, input_file_ptr) != 1)
 		{
 			throw std::runtime_error("Read Error!");
 		}
+		read_length += sizeof(T);
 		simple::swap(t, m_same_type);
 	}
 	template<>
 	void read(typename std::vector<char>& vec)
 	{
-		if (m_istm.read(reinterpret_cast<char*>(&vec[0]), vec.size()).bad())
+		if (std::fread(reinterpret_cast<void*>(&vec[0]), vec.size(), 1, input_file_ptr) != 1)
 		{
 			throw std::runtime_error("Read Error!");
 		}
+		read_length += vec.size();
 	}
 	void read(char* p, size_t size)
 	{
-		if(m_istm.read(p, size).bad())
+		if (std::fread(reinterpret_cast<void*>(p), size, 1, input_file_ptr) != 1)
 		{
 			throw std::runtime_error("Read Error!");
 		}
+		read_length += size;
 	}
 private:
-	std::ifstream m_istm;
+	void compute_length()
+	{
+		seekg(0, SEEK_END);
+		file_size = tellg();
+		seekg(0, SEEK_SET);
+	}
+
+	std::FILE* input_file_ptr;
+	long file_size;
+	long read_length;
 	same_endian_type m_same_type;
 };
 
@@ -510,46 +534,46 @@ template<typename same_endian_type>
 class file_ostream
 {
 public:
-	file_ostream() {}
-	file_ostream(const char * file)
+	file_ostream() : output_file_ptr(nullptr) {}
+	file_ostream(const char * file) : output_file_ptr(nullptr)
 	{
 		open(file);
 	}
 	void open(const char * file)
 	{
-		m_ostm.open(file, std::ios_base::out | std::ios_base::binary);
+		output_file_ptr = std::fopen(file, "wb");
 	}
 	void flush()
 	{
-		m_ostm.flush();
+		std::fflush(output_file_ptr);
 	}
 	void close()
 	{
-		m_ostm.close();
+		std::fclose(output_file_ptr);
 	}
 	bool is_open()
 	{
-		return m_ostm.is_open();
+		return output_file_ptr != nullptr;
 	}
 	template<typename T>
 	void write(const T& t)
 	{
 		T t2 = t;
 		simple::swap(t2, m_same_type);
-		m_ostm.write(reinterpret_cast<const char*>(&t2), sizeof(T));
+		std::fwrite(reinterpret_cast<const void*>(&t2), sizeof(T), 1, output_file_ptr);
 	}
 	template<>
 	void write(const std::vector<char>& vec)
 	{
-		m_ostm.write(reinterpret_cast<const char*>(&vec[0]), vec.size());
+		std::fwrite(reinterpret_cast<const void*>(&vec[0]), vec.size(), 1, output_file_ptr);
 	}
 	void write(const char* p, size_t size)
 	{
-		m_ostm.write(p, size);
+		std::fwrite(reinterpret_cast<const void*>(p), size, 1, output_file_ptr);
 	}
 
 private:
-	std::ofstream m_ostm;
+	std::FILE* output_file_ptr;
 	same_endian_type m_same_type;
 };
 

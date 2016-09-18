@@ -7,6 +7,7 @@
 #include <chrono>
 #include <vector>
 #include "../TestBinStream/SimpleBinStream.h"
+#include "OldSimpleBinStream.h"
 
 #ifdef WIN32
 
@@ -58,10 +59,10 @@ void init(std::vector<Product>& vec);
 
 int main(int argc, char *argv[])
 {
-	const std::string old_file = "F:\\mini_products.txt";
-	const std::string new_file = "F:\\blazing_products.txt";
+	const std::string old_file = "F:\\old_products.txt";
+	const std::string new_file = "F:\\new_products.txt";
 
-	const size_t MAX_LOOP = (argc == 2) ? atoi(argv[1]) : 10000;
+	const size_t MAX_LOOP = (argc == 2) ? atoi(argv[1]) : 100000;
 
 	std::vector<Product> vec;
 	init(vec);
@@ -73,11 +74,13 @@ int main(int argc, char *argv[])
 	// file stream benchmark
 	//=========================
 	{
-		simple::file_ostream<std::true_type> os(old_file.c_str(), std::ios_base::out | std::ios_base::binary);
+		using namespace old;
+
+		file_ostream<std::true_type> os(new_file.c_str());
 
 		if (os.is_open())
 		{
-			stopwatch.start_timing("simple::file_ostream");
+			stopwatch.start_timing("old::file_ostream");
 			for (size_t k = 0; k < MAX_LOOP; ++k)
 			{
 				for (size_t i = 0; i < vec.size(); ++i)
@@ -92,15 +95,18 @@ int main(int argc, char *argv[])
 		os.flush();
 		os.close();
 
-		simple::file_istream<std::true_type> is(old_file.c_str(), std::ios_base::in | std::ios_base::binary);
+		file_istream<std::true_type> is(new_file.c_str());
 
 		if (is.is_open())
 		{
 			Product product;
-			stopwatch.start_timing("simple::file_istream");
+			stopwatch.start_timing("old::file_istream");
 			try
 			{
-				is >> product.name >> product.qty >> product.price;
+				while (!is.eof())
+				{
+					is >> product.name >> product.qty >> product.price;
+				}
 			}
 			catch (std::runtime_error& e)
 			{
@@ -112,11 +118,11 @@ int main(int argc, char *argv[])
 	{
 		using namespace simple;
 
-		simple::file_ostream<std::true_type> os(new_file.c_str(), std::ios_base::out | std::ios_base::binary);
+		file_ostream<std::true_type> os(old_file.c_str());
 
 		if (os.is_open())
 		{
-			stopwatch.start_timing("simple::file_ostream");
+			stopwatch.start_timing("new::file_ostream");
 			for (size_t k = 0; k < MAX_LOOP; ++k)
 			{
 				for (size_t i = 0; i < vec.size(); ++i)
@@ -131,15 +137,18 @@ int main(int argc, char *argv[])
 		os.flush();
 		os.close();
 
-		simple::file_istream<std::true_type> is(new_file.c_str(), std::ios_base::in | std::ios_base::binary);
+		file_istream<std::true_type> is(old_file.c_str());
 
 		if (is.is_open())
 		{
 			Product product;
-			stopwatch.start_timing("simple::file_istream");
+			stopwatch.start_timing("new::file_istream");
 			try
 			{
-				is >> product.name >> product.qty >> product.price;
+				while (!is.eof())
+				{
+					is >> product.name >> product.qty >> product.price;
+				}
 			}
 			catch (std::runtime_error& e)
 			{
