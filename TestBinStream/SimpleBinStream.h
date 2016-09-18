@@ -132,13 +132,13 @@ class file_istream
 {
 public:
 	file_istream() {}
-	file_istream(const char * file, std::ios_base::openmode mode) 
+	file_istream(const char * file) 
 	{
-		open(file, mode);
+		open(file);
 	}
-	void open(const char * file, std::ios_base::openmode mode)
+	void open(const char * file)
 	{
-		m_istm.open(file, mode);
+		m_istm.open(file, std::ios_base::in | std::ios_base::binary);
 	}
 	void close()
 	{
@@ -511,13 +511,13 @@ class file_ostream
 {
 public:
 	file_ostream() {}
-	file_ostream(const char * file, std::ios_base::openmode mode)
+	file_ostream(const char * file)
 	{
-		open(file, mode);
+		open(file);
 	}
-	void open(const char * file, std::ios_base::openmode mode)
+	void open(const char * file)
 	{
-		m_ostm.open(file, mode);
+		m_ostm.open(file, std::ios_base::out | std::ios_base::binary);
 	}
 	void flush()
 	{

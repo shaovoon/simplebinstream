@@ -68,12 +68,12 @@ void TestMemPtr()
 
 void TestFile()
 {
-	simple::file_ostream<std::true_type> out("file.bin", std::ios_base::out | std::ios_base::binary);
+	simple::file_ostream<std::true_type> out("file.bin");
 	out << 23 << 24 << "Hello world!";
 	out.flush();
 	out.close();
 
-	simple::file_istream<std::true_type> in("file.bin", std::ios_base::in | std::ios_base::binary);
+	simple::file_istream<std::true_type> in("file.bin");
 	int num1 = 0, num2 = 0;
 	std::string str;
 	in >> num1 >> num2 >> str;
@@ -119,12 +119,12 @@ void TestFileCustomOperatorsOnVec()
 	vec_src.push_back(Product("Book", 10.0f, 50));
 	vec_src.push_back(Product("Phone", 25.0f, 20));
 	vec_src.push_back(Product("Pillow", 8.0f, 10));
-	simple::file_ostream<std::true_type> out("file.bin", std::ios_base::out | std::ios_base::binary);
+	simple::file_ostream<std::true_type> out("file.bin");
 	out << vec_src;
 	out.flush();
 	out.close();
 
-	simple::file_istream<std::true_type> in("file.bin", std::ios_base::in | std::ios_base::binary);
+	simple::file_istream<std::true_type> in("file.bin");
 	std::vector<Product> vec_dest;
 	in >> vec_dest;
 
@@ -161,13 +161,13 @@ void TestMemPtrCustomOperators()
 
 void TestFileCustomOperators()
 {
-	simple::file_ostream<std::true_type> out("file2.bin", std::ios_base::out | std::ios_base::binary);
+	simple::file_ostream<std::true_type> out("file2.bin");
 	out << Product("Book", 10.0f, 50);
 	out << Product("Phone", 25.0f, 20);
 	out.flush();
 	out.close();
 
-	simple::file_istream<std::true_type> in("file2.bin", std::ios_base::in | std::ios_base::binary);
+	simple::file_istream<std::true_type> in("file2.bin");
 	Product product;
 	in >> product;
 	print_product(product);
