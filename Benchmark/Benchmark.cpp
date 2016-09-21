@@ -156,6 +156,80 @@ int main(int argc, char *argv[])
 			}
 			stopwatch.stop_timing();
 		}
+
+		is.close();
+
+		memfile_istream<std::true_type> is_copy(old_file.c_str());
+
+		if (is_copy.is_open())
+		{
+			Product product;
+			stopwatch.start_timing("new::memfile_istream");
+			try
+			{
+				while (!is_copy.eof())
+				{
+					is_copy >> product.name >> product.qty >> product.price;
+				}
+			}
+			catch (std::runtime_error& e)
+			{
+				fprintf(stderr, "%s\n", e.what());
+			}
+			stopwatch.stop_timing();
+		}
+		is_copy.close();
+	}
+
+	{
+		using namespace simple;
+
+		mem_ostream<std::true_type> os;
+
+		stopwatch.start_timing("new::mem_ostream");
+		for (size_t k = 0; k < MAX_LOOP; ++k)
+		{
+			for (size_t i = 0; i < vec.size(); ++i)
+			{
+				const Product& product = vec[i];
+				os << product.name << product.qty << product.price;
+				do_not_optimize_away(result.c_str());
+			}
+		}
+		stopwatch.stop_timing();
+
+		mem_istream<std::true_type> is(os.get_internal_vec());
+
+		Product product;
+		stopwatch.start_timing("new::mem_istream");
+		try
+		{
+			while (!is.eof())
+			{
+				is >> product.name >> product.qty >> product.price;
+			}
+		}
+		catch (std::runtime_error& e)
+		{
+			fprintf(stderr, "%s\n", e.what());
+		}
+		stopwatch.stop_timing();
+
+		ptr_istream<std::true_type> ptr_is(os.get_internal_vec());
+
+		stopwatch.start_timing("new::ptr_istream");
+		try
+		{
+			while (!ptr_is.eof())
+			{
+				ptr_is >> product.name >> product.qty >> product.price;
+			}
+		}
+		catch (std::runtime_error& e)
+		{
+			fprintf(stderr, "%s\n", e.what());
+		}
+		stopwatch.stop_timing();
 	}
 
 	return 0;

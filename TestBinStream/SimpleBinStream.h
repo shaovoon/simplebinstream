@@ -9,9 +9,10 @@
 // version 0.9.4   : New ptr_istream class
 // version 0.9.5   : Add Endianness Swap with compile time check
 // version 0.9.6   : Using C File APIs, instead of STL file streams
+// version 0.9.7   : Add memfile_istream
 
-#ifndef MiniBinStream_H
-#define MiniBinStream_H
+#ifndef SimpleBinStream_H
+#define SimpleBinStream_H
 
 #include <fstream>
 #include <vector>
@@ -531,6 +532,151 @@ typename ptr_istream<same_endian_type>& operator >> (typename ptr_istream<same_e
 }
 
 template<typename same_endian_type>
+class memfile_istream
+{
+public:
+	memfile_istream() : m_arr(NULL), m_size(0), m_index(0) {}
+	memfile_istream(const char * file) : m_arr(NULL), m_size(0), m_index(0)
+	{
+		open(file);
+	}
+	~memfile_istream()
+	{
+		close();
+	}
+	void open(const char * file)
+	{
+		close();
+		std::FILE* input_file_ptr = std::fopen(file, "rb");
+		compute_length(input_file_ptr);
+		m_arr = new char[m_size];
+		std::fread(m_arr, m_size, 1, input_file_ptr);
+		fclose(input_file_ptr);
+	}
+	void close()
+	{
+		delete[] m_arr;
+		m_arr = NULL; m_size = 0; m_index = 0;
+	}
+	bool is_open()
+	{
+		return (m_arr != nullptr);
+	}
+	long file_length() const
+	{
+		return m_size;
+	}
+	bool eof() const
+	{
+		return m_index >= m_size;
+	}
+	long tellg(std::FILE* input_file_ptr) const
+	{
+		return std::ftell(input_file_ptr);
+	}
+	void seekg(std::FILE* input_file_ptr, long pos)
+	{
+		std::fseek(input_file_ptr, pos, SEEK_SET);
+	}
+	void seekg(std::FILE* input_file_ptr, long offset, int way)
+	{
+		std::fseek(input_file_ptr, offset, way);
+	}
+
+	template<typename T>
+	void read(T& t)
+	{
+		if (eof())
+			throw std::runtime_error("Premature end of array!");
+
+		if ((m_index + sizeof(T)) > m_size)
+			throw std::runtime_error("Premature end of array!");
+
+		std::memcpy(reinterpret_cast<void*>(&t), &m_arr[m_index], sizeof(T));
+
+		simple::swap(t, m_same_type);
+
+		m_index += sizeof(T);
+	}
+
+	template<>
+	void read(typename std::vector<char>& vec)
+	{
+		if (eof())
+			throw std::runtime_error("Premature end of array!");
+
+		if ((m_index + vec.size()) > m_size)
+			throw std::runtime_error("Premature end of array!");
+
+		std::memcpy(reinterpret_cast<void*>(&vec[0]), &m_arr[m_index], vec.size());
+
+		m_index += vec.size();
+	}
+
+	void read(char* p, size_t size)
+	{
+		if (eof())
+			throw std::runtime_error("Premature end of array!");
+
+		if ((m_index + size) > m_size)
+			throw std::runtime_error("Premature end of array!");
+
+		std::memcpy(reinterpret_cast<void*>(p), &m_arr[m_index], size);
+
+		m_index += size;
+	}
+
+	void read(std::string& str, const unsigned int size)
+	{
+		if (eof())
+			throw std::runtime_error("Premature end of array!");
+
+		if ((m_index + str.size()) > m_size)
+			throw std::runtime_error("Premature end of array!");
+
+		str.assign(&m_arr[m_index], size);
+
+		m_index += str.size();
+	}
+
+private:
+	void compute_length(std::FILE* input_file_ptr)
+	{
+		seekg(input_file_ptr, 0, SEEK_END);
+		m_size = tellg(input_file_ptr);
+		seekg(input_file_ptr, 0, SEEK_SET);
+	}
+
+	char* m_arr;
+	size_t m_size;
+	size_t m_index;
+	same_endian_type m_same_type;
+};
+
+
+template<typename same_endian_type, typename T>
+typename memfile_istream<same_endian_type>& operator >> (typename memfile_istream<same_endian_type>& istm, T& val)
+{
+	istm.read(val);
+
+	return istm;
+}
+
+template<typename same_endian_type>
+typename memfile_istream<same_endian_type>& operator >> (typename memfile_istream<same_endian_type>& istm, std::string& val)
+{
+	int size = 0;
+	istm.read(size);
+
+	if (size <= 0)
+		return istm;
+
+	istm.read(val, size);
+
+	return istm;
+}
+
+template<typename same_endian_type>
 class file_ostream
 {
 public:
@@ -689,4 +835,4 @@ typename mem_ostream<same_endian_type>& operator << (typename mem_ostream<same_e
 
 } // ns simple
 
-#endif // MiniBinStream_H
+#endif // SimpleBinStream_H
