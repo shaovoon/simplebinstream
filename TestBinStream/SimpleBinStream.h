@@ -393,8 +393,8 @@ template<typename same_endian_type>
 class ptr_istream
 {
 public:
-	ptr_istream() : m_arr(NULL), m_size(0), m_index(0) {}
-	ptr_istream(const char * mem, size_t size)
+	ptr_istream() : m_arr(nullptr), m_size(0), m_index(0) {}
+	ptr_istream(const char * mem, size_t size) : m_arr(nullptr), m_size(0), m_index(0)
 	{
 		open(mem, size);
 	}
@@ -412,7 +412,7 @@ public:
 	}
 	void close()
 	{
-		m_arr = NULL; m_size = 0; m_index = 0;
+		m_arr = nullptr; m_size = 0; m_index = 0;
 	}
 	bool eof() const
 	{
@@ -535,8 +535,8 @@ template<typename same_endian_type>
 class memfile_istream
 {
 public:
-	memfile_istream() : m_arr(NULL), m_size(0), m_index(0) {}
-	memfile_istream(const char * file) : m_arr(NULL), m_size(0), m_index(0)
+	memfile_istream() : m_arr(nullptr), m_size(0), m_index(0) {}
+	memfile_istream(const char * file) : m_arr(nullptr), m_size(0), m_index(0)
 	{
 		open(file);
 	}
@@ -556,7 +556,7 @@ public:
 	void close()
 	{
 		delete[] m_arr;
-		m_arr = NULL; m_size = 0; m_index = 0;
+		m_arr = nullptr; m_size = 0; m_index = 0;
 	}
 	bool is_open()
 	{
