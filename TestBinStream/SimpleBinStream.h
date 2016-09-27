@@ -833,6 +833,93 @@ typename mem_ostream<same_endian_type>& operator << (typename mem_ostream<same_e
 	return ostm;
 }
 
+template<typename same_endian_type>
+class memfile_ostream
+{
+public:
+	memfile_ostream() {}
+	void close()
+	{
+		m_vec.clear();
+	}
+	const std::vector<char>& get_internal_vec()
+	{
+		return m_vec;
+	}
+	template<typename T>
+	void write(const T& t)
+	{
+		std::vector<char> vec(sizeof(T));
+		T t2 = t;
+		simple::swap(t2, m_same_type);
+		std::memcpy(reinterpret_cast<void*>(&vec[0]), reinterpret_cast<const void*>(&t2), sizeof(T));
+		write(vec);
+	}
+	template<>
+	void write(const std::vector<char>& vec)
+	{
+		m_vec.insert(m_vec.end(), vec.begin(), vec.end());
+	}
+	void write(const char* p, size_t size)
+	{
+		for (size_t i = 0; i<size; ++i)
+			m_vec.push_back(p[i]);
+	}
+	bool write_to_file(const char* file)
+	{
+		std::FILE* fp = std::fopen(file, "wb");
+		if (fp)
+		{
+			size_t size = std::fwrite(m_vec.data(), m_vec.size(), 1, fp);
+			std::fflush(fp);
+			std::fclose(fp);
+			m_vec.clear();
+			return size == 1u;
+		}
+		return false;
+	}
+
+private:
+	std::vector<char> m_vec;
+	same_endian_type m_same_type;
+};
+
+template<typename same_endian_type, typename T>
+typename memfile_ostream<same_endian_type>& operator << (typename memfile_ostream<same_endian_type>& ostm, const T& val)
+{
+	ostm.write(val);
+
+	return ostm;
+}
+
+template<typename same_endian_type>
+typename memfile_ostream<same_endian_type>& operator << (typename memfile_ostream<same_endian_type>& ostm, const std::string& val)
+{
+	int size = val.size();
+	ostm.write(size);
+
+	if (val.size() <= 0)
+		return ostm;
+
+	ostm.write(val.c_str(), val.size());
+
+	return ostm;
+}
+
+template<typename same_endian_type>
+typename memfile_ostream<same_endian_type>& operator << (typename memfile_ostream<same_endian_type>& ostm, const char* val)
+{
+	int size = std::strlen(val);
+	ostm.write(size);
+
+	if (size <= 0)
+		return ostm;
+
+	ostm.write(val, size);
+
+	return ostm;
+}
+
 } // ns simple
 
 #endif // SimpleBinStream_H

@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
 {
 	const std::string old_file = "F:\\old_products.txt";
 	const std::string new_file = "F:\\new_products.txt";
+	const std::string mem_file = "F:\\mem_products.txt";
 
 	const size_t MAX_LOOP = (argc == 2) ? atoi(argv[1]) : 100000;
 
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
 	{
 		using namespace old;
 
-		file_ostream<std::true_type> os(new_file.c_str());
+		file_ostream<std::true_type> os(old_file.c_str());
 
 		if (os.is_open())
 		{
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 		os.flush();
 		os.close();
 
-		file_istream<std::true_type> is(new_file.c_str());
+		file_istream<std::true_type> is(old_file.c_str());
 
 		if (is.is_open())
 		{
@@ -118,7 +119,7 @@ int main(int argc, char *argv[])
 	{
 		using namespace simple;
 
-		file_ostream<std::true_type> os(old_file.c_str());
+		file_ostream<std::true_type> os(new_file.c_str());
 
 		if (os.is_open())
 		{
@@ -137,7 +138,7 @@ int main(int argc, char *argv[])
 		os.flush();
 		os.close();
 
-		file_istream<std::true_type> is(old_file.c_str());
+		file_istream<std::true_type> is(new_file.c_str());
 
 		if (is.is_open())
 		{
@@ -158,8 +159,26 @@ int main(int argc, char *argv[])
 		}
 
 		is.close();
+	}
+	{
+		using namespace simple;
 
-		memfile_istream<std::true_type> is_copy(old_file.c_str());
+		memfile_ostream<std::true_type> os;
+
+		stopwatch.start_timing("new::memfile_ostream");
+		for (size_t k = 0; k < MAX_LOOP; ++k)
+		{
+			for (size_t i = 0; i < vec.size(); ++i)
+			{
+				const Product& product = vec[i];
+				os << product.name << product.qty << product.price;
+				do_not_optimize_away(result.c_str());
+			}
+		}
+		os.write_to_file(mem_file.c_str());
+		stopwatch.stop_timing();
+
+		memfile_istream<std::true_type> is_copy(mem_file.c_str());
 
 		if (is_copy.is_open())
 		{

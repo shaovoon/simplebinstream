@@ -21,7 +21,7 @@ void TestMemFileCustomOperators();
 using namespace std;
 int main(int argc, char* argv[])
 {
-	TestMem();
+	/*TestMem();
 	std::cout << "=============" << std::endl;
 	TestMemPtr();
 	std::cout << "=============" << std::endl;
@@ -33,10 +33,10 @@ int main(int argc, char* argv[])
 	std::cout << "=============" << std::endl;
 	TestMemPtrCustomOperatorsOnVec();
 	std::cout << "=============" << std::endl;
-	TestFileCustomOperatorsOnVec();
+	TestFileCustomOperatorsOnVec();*/
 	std::cout << "=============" << std::endl;
 	TestMemFileCustomOperatorsOnVec();
-	std::cout << "=============" << std::endl;
+	/*std::cout << "=============" << std::endl;
 	TestMemCustomOperators();
 	std::cout << "=============" << std::endl;
 	TestMemPtrCustomOperators();
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 	TestFileCustomOperators();
 	std::cout << "=============" << std::endl;
 	TestMemFileCustomOperators();
-	std::cout << "=============" << std::endl;
+	std::cout << "=============" << std::endl;*/
 	return 0;
 }
 
@@ -92,12 +92,11 @@ void TestFile()
 
 void TestMemFile()
 {
-	simple::file_ostream<std::true_type> out("file.bin");
+	simple::memfile_ostream<std::true_type> out;
 	out << 23 << 24 << "Hello world!";
-	out.flush();
-	out.close();
+	out.write_to_file("file2.bin");
 
-	simple::memfile_istream<std::true_type> in("file.bin");
+	simple::memfile_istream<std::true_type> in("file2.bin");
 	int num1 = 0, num2 = 0;
 	std::string str;
 	in >> num1 >> num2 >> str;
@@ -161,12 +160,11 @@ void TestMemFileCustomOperatorsOnVec()
 	vec_src.push_back(Product("Book", 10.0f, 50));
 	vec_src.push_back(Product("Phone", 25.0f, 20));
 	vec_src.push_back(Product("Pillow", 8.0f, 10));
-	simple::file_ostream<std::true_type> out("file.bin");
+	simple::memfile_ostream<std::true_type> out;
 	out << vec_src;
-	out.flush();
-	out.close();
+	out.write_to_file("file4.bin");
 
-	simple::memfile_istream<std::true_type> in("file.bin");
+	simple::memfile_istream<std::true_type> in("file4.bin");
 	std::vector<Product> vec_dest;
 	in >> vec_dest;
 
@@ -219,13 +217,12 @@ void TestFileCustomOperators()
 
 void TestMemFileCustomOperators()
 {
-	simple::file_ostream<std::true_type> out("file2.bin");
+	simple::memfile_ostream<std::true_type> out;
 	out << Product("Book", 10.0f, 50);
 	out << Product("Phone", 25.0f, 20);
-	out.flush();
-	out.close();
+	out.write_to_file("file3.bin");
 
-	simple::memfile_istream<std::true_type> in("file2.bin");
+	simple::memfile_istream<std::true_type> in("file3.bin");
 	Product product;
 	in >> product;
 	print_product(product);

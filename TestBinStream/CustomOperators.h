@@ -49,6 +49,12 @@ typename simple::file_ostream<same_endian_type>& operator << (typename simple::f
 }
 
 template<typename same_endian_type>
+typename simple::memfile_ostream<same_endian_type>& operator << (typename simple::memfile_ostream<same_endian_type>& ostm, const Product& val)
+{
+	return ostm << val.product_name << val.price << val.qty;
+}
+
+template<typename same_endian_type>
 typename simple::mem_istream<same_endian_type>& operator >> (typename simple::mem_istream<same_endian_type>& istm, std::vector<Product>& vec)
 {
 	int size=0;
@@ -143,6 +149,19 @@ typename simple::file_ostream<same_endian_type>& operator << (typename simple::f
 	int size = vec.size();
 	ostm << size;
 	for(size_t i=0; i<vec.size(); ++i)
+	{
+		ostm << vec[i];
+	}
+
+	return ostm;
+}
+
+template<typename same_endian_type>
+typename simple::memfile_ostream<same_endian_type>& operator << (typename simple::memfile_ostream<same_endian_type>& ostm, const std::vector<Product>& vec)
+{
+	int size = vec.size();
+	ostm << size;
+	for (size_t i = 0; i<vec.size(); ++i)
 	{
 		ostm << vec[i];
 	}
