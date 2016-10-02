@@ -139,15 +139,23 @@ public:
 	{
 		open(file);
 	}
+	~file_istream()
+	{
+		close();
+	}
 	void open(const char * file)
 	{
+		close();
 		input_file_ptr = std::fopen(file, "rb");
 		compute_length();
 	}
 	void close()
 	{
-		fclose(input_file_ptr);
-		input_file_ptr = nullptr;
+		if (input_file_ptr)
+		{
+			fclose(input_file_ptr);
+			input_file_ptr = nullptr;
+		}
 	}
 	bool is_open()
 	{
@@ -555,8 +563,11 @@ public:
 	}
 	void close()
 	{
-		delete[] m_arr;
-		m_arr = nullptr; m_size = 0; m_index = 0;
+		if (m_arr)
+		{
+			delete[] m_arr;
+			m_arr = nullptr; m_size = 0; m_index = 0;
+		}
 	}
 	bool is_open()
 	{
@@ -685,8 +696,13 @@ public:
 	{
 		open(file);
 	}
+	~file_ostream()
+	{
+		close();
+	}
 	void open(const char * file)
 	{
+		close();
 		output_file_ptr = std::fopen(file, "wb");
 	}
 	void flush()
@@ -695,7 +711,11 @@ public:
 	}
 	void close()
 	{
-		std::fclose(output_file_ptr);
+		if (output_file_ptr)
+		{
+			std::fclose(output_file_ptr);
+			output_file_ptr = nullptr;
+		}
 	}
 	bool is_open()
 	{
