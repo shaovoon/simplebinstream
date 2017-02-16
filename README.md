@@ -208,4 +208,23 @@ struct swap_endian<T, 2>
 };
 ```
 
+Benchmark of 0.9.7 against 0.9.5
+
+```
+   # File streams
+
+   old::file_ostream:  359ms
+   old::file_istream:  416ms
+   new::file_ostream:  216ms
+   new::file_istream:  328ms
+new::memfile_ostream:  552ms
+new::memfile_istream:   12ms
+
+   # In-memory streams
+
+    new::mem_ostream:  534ms
+    new::mem_istream:   16ms
+    new::ptr_istream:   15ms
+```
+
 [CodeProject Tutorial](http://www.codeproject.com/Tips/808776/Cplusplus-Simplistic-Binary-Streams)
