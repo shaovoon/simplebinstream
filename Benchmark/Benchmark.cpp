@@ -19,7 +19,7 @@ void do_not_optimize_away(T&& datum) {
 #pragma optimize("", on)
 
 #else
-static void do_not_optimize_away(void* p) {
+static void do_not_optimize_away(const char* p) {
 	asm volatile("" : : "g"(p) : "memory");
 }
 #endif
@@ -43,7 +43,7 @@ public:
 
 private:
 	std::string text;
-	std::chrono::steady_clock::time_point begin;
+	std::chrono::high_resolution_clock::time_point begin;
 };
 
 struct Product

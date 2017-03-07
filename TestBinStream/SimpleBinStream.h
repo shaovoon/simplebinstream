@@ -10,6 +10,7 @@
 // version 0.9.5   : Add Endianness Swap with compile time check
 // version 0.9.6   : Using C File APIs, instead of STL file streams
 // version 0.9.7   : Add memfile_istream
+// version 0.9.8   : Fix GCC and Clang template errors
 
 #ifndef SimpleBinStream_H
 #define SimpleBinStream_H
@@ -34,9 +35,75 @@ namespace simple
 	using LittleEndian = std::integral_constant<Endian, Endian::Little>;
 
 	template<typename T>
-	void swap(T& val, std::true_type)
+	void swap_endian8(T& ui)
 	{
-		// same endian so do nothing.
+		union EightBytes
+		{
+			T ui;
+			uint8_t arr[8];
+		};
+
+		EightBytes fb;
+		fb.ui = ui;
+		// swap the endian
+		std::swap(fb.arr[0], fb.arr[7]);
+		std::swap(fb.arr[1], fb.arr[6]);
+		std::swap(fb.arr[2], fb.arr[5]);
+		std::swap(fb.arr[3], fb.arr[4]);
+
+		ui = fb.ui;
+	}
+
+	template<typename T>
+	void swap_endian4(T& ui)
+	{
+		union FourBytes
+		{
+			T ui;
+			uint8_t arr[4];
+		};
+
+		FourBytes fb;
+		fb.ui = ui;
+		// swap the endian
+		std::swap(fb.arr[0], fb.arr[3]);
+		std::swap(fb.arr[1], fb.arr[2]);
+
+		ui = fb.ui;
+	}
+
+	template<typename T>
+	void swap_endian2(T& ui)
+	{
+		union TwoBytes
+		{
+			T ui;
+			uint8_t arr[2];
+		};
+
+		TwoBytes fb;
+		fb.ui = ui;
+		// swap the endian
+		std::swap(fb.arr[0], fb.arr[1]);
+
+		ui = fb.ui;
+	}
+	
+	template<typename T>
+	void swap_if_integral(T& val, std::true_type)
+	{
+		switch(sizeof(T))
+		{
+			case 2u: swap_endian2(val); break;
+			case 4u: swap_endian4(val); break;
+			case 8u: swap_endian8(val); break;
+		}
+	}
+	
+	template<typename T>
+	void swap_if_integral(T& val, std::false_type)
+	{
+		// T is not integral so do nothing
 	}
 
 	template<typename T>
@@ -45,90 +112,12 @@ namespace simple
 		std::is_integral<T> is_integral_type;
 		swap_if_integral(val, is_integral_type);
 	}
-
+	
 	template<typename T>
-	void swap_if_integral(T& val, std::false_type)
+	void swap(T& val, std::true_type)
 	{
-		// T is not integral so do nothing
+		// same endian so do nothing.
 	}
-
-	template<typename T>
-	void swap_if_integral(T& val, std::true_type)
-	{
-		swap_endian<T, sizeof(T)>()(val);
-	}
-
-	template<typename T, size_t N>
-	struct swap_endian
-	{
-		void operator()(T& ui)
-		{
-		}
-	};
-
-	template<typename T>
-	struct swap_endian<T, 8>
-	{
-		void operator()(T& ui)
-		{
-			union EightBytes
-			{
-				T ui;
-				uint8_t arr[8];
-			};
-
-			EightBytes fb;
-			fb.ui = ui;
-			// swap the endian
-			std::swap(fb.arr[0], fb.arr[7]);
-			std::swap(fb.arr[1], fb.arr[6]);
-			std::swap(fb.arr[2], fb.arr[5]);
-			std::swap(fb.arr[3], fb.arr[4]);
-
-			ui = fb.ui;
-		}
-	};
-
-	template<typename T>
-	struct swap_endian<T, 4>
-	{
-		void operator()(T& ui)
-		{
-			union FourBytes
-			{
-				T ui;
-				uint8_t arr[4];
-			};
-
-			FourBytes fb;
-			fb.ui = ui;
-			// swap the endian
-			std::swap(fb.arr[0], fb.arr[3]);
-			std::swap(fb.arr[1], fb.arr[2]);
-
-			ui = fb.ui;
-		}
-	};
-
-	template<typename T>
-	struct swap_endian<T, 2>
-	{
-		void operator()(T& ui)
-		{
-			union TwoBytes
-			{
-				T ui;
-				uint8_t arr[2];
-			};
-
-			TwoBytes fb;
-			fb.ui = ui;
-			// swap the endian
-			std::swap(fb.arr[0], fb.arr[1]);
-
-			ui = fb.ui;
-		}
-	};
 
 template<typename same_endian_type>
 class file_istream
@@ -146,7 +135,12 @@ public:
 	void open(const char * file)
 	{
 		close();
+#ifdef _MSC_VER
+		input_file_ptr = nullptr;
+		fopen_s(&input_file_ptr, file, "rb");
+#else
 		input_file_ptr = std::fopen(file, "rb");
+#endif
 		compute_length();
 	}
 	void close()
@@ -196,7 +190,6 @@ public:
 		read_length += sizeof(T);
 		simple::swap(t, m_same_type);
 	}
-	template<>
 	void read(typename std::vector<char>& vec)
 	{
 		if (std::fread(reinterpret_cast<void*>(&vec[0]), vec.size(), 1, input_file_ptr) != 1)
@@ -228,7 +221,7 @@ private:
 };
 
 template<typename same_endian_type, typename T>
-typename file_istream<same_endian_type>& operator >> (typename file_istream<same_endian_type>& istm, T& val)
+ file_istream<same_endian_type>& operator >> ( file_istream<same_endian_type>& istm, T& val)
 {
 	istm.read(val);
 
@@ -236,7 +229,7 @@ typename file_istream<same_endian_type>& operator >> (typename file_istream<same
 }
 
 template<typename same_endian_type>
-typename file_istream<same_endian_type>& operator >> (typename file_istream<same_endian_type>& istm, std::string& val)
+ file_istream<same_endian_type>& operator >> ( file_istream<same_endian_type>& istm, std::string& val)
 {
 	int size = 0;
 	istm.read(size);
@@ -329,7 +322,6 @@ public:
 		m_index += sizeof(T);
 	}
 
-	template<>
 	void read(typename std::vector<char>& vec)
 	{
 		if (eof())
@@ -376,7 +368,7 @@ private:
 };
 
 template<typename same_endian_type, typename T>
-typename mem_istream<same_endian_type>& operator >> (typename mem_istream<same_endian_type>& istm, T& val)
+ mem_istream<same_endian_type>& operator >> ( mem_istream<same_endian_type>& istm, T& val)
 {
 	istm.read(val);
 
@@ -469,7 +461,6 @@ public:
 		m_index += sizeof(T);
 	}
 
-	template<>
 	void read(typename std::vector<char>& vec)
 	{
 		if (eof())
@@ -518,7 +509,7 @@ private:
 
 
 template<typename same_endian_type, typename T>
-typename ptr_istream<same_endian_type>& operator >> (typename ptr_istream<same_endian_type>& istm, T& val)
+ ptr_istream<same_endian_type>& operator >> ( ptr_istream<same_endian_type>& istm, T& val)
 {
 	istm.read(val);
 
@@ -526,7 +517,7 @@ typename ptr_istream<same_endian_type>& operator >> (typename ptr_istream<same_e
 }
 
 template<typename same_endian_type>
-typename ptr_istream<same_endian_type>& operator >> (typename ptr_istream<same_endian_type>& istm, std::string& val)
+ ptr_istream<same_endian_type>& operator >> ( ptr_istream<same_endian_type>& istm, std::string& val)
 {
 	int size = 0;
 	istm.read(size);
@@ -555,7 +546,12 @@ public:
 	void open(const char * file)
 	{
 		close();
+#ifdef _MSC_VER
+		std::FILE* input_file_ptr = nullptr;
+		fopen_s(&input_file_ptr, file, "rb");
+#else
 		std::FILE* input_file_ptr = std::fopen(file, "rb");
+#endif
 		compute_length(input_file_ptr);
 		m_arr = new char[m_size];
 		std::fread(m_arr, m_size, 1, input_file_ptr);
@@ -610,7 +606,6 @@ public:
 		m_index += sizeof(T);
 	}
 
-	template<>
 	void read(typename std::vector<char>& vec)
 	{
 		if (eof())
@@ -666,7 +661,7 @@ private:
 
 
 template<typename same_endian_type, typename T>
-typename memfile_istream<same_endian_type>& operator >> (typename memfile_istream<same_endian_type>& istm, T& val)
+ memfile_istream<same_endian_type>& operator >> ( memfile_istream<same_endian_type>& istm, T& val)
 {
 	istm.read(val);
 
@@ -674,7 +669,7 @@ typename memfile_istream<same_endian_type>& operator >> (typename memfile_istrea
 }
 
 template<typename same_endian_type>
-typename memfile_istream<same_endian_type>& operator >> (typename memfile_istream<same_endian_type>& istm, std::string& val)
+ memfile_istream<same_endian_type>& operator >> ( memfile_istream<same_endian_type>& istm, std::string& val)
 {
 	int size = 0;
 	istm.read(size);
@@ -703,7 +698,12 @@ public:
 	void open(const char * file)
 	{
 		close();
+#ifdef _MSC_VER
+		output_file_ptr = nullptr;
+		fopen_s(&output_file_ptr, file, "wb");
+#else
 		output_file_ptr = std::fopen(file, "wb");
+#endif
 	}
 	void flush()
 	{
@@ -728,7 +728,6 @@ public:
 		simple::swap(t2, m_same_type);
 		std::fwrite(reinterpret_cast<const void*>(&t2), sizeof(T), 1, output_file_ptr);
 	}
-	template<>
 	void write(const std::vector<char>& vec)
 	{
 		std::fwrite(reinterpret_cast<const void*>(&vec[0]), vec.size(), 1, output_file_ptr);
@@ -752,7 +751,7 @@ file_ostream<same_endian_type>& operator << (file_ostream<same_endian_type>& ost
 }
 
 template<typename same_endian_type>
-typename file_ostream<same_endian_type>& operator << (typename file_ostream<same_endian_type>& ostm, const std::string& val)
+ file_ostream<same_endian_type>& operator << ( file_ostream<same_endian_type>& ostm, const std::string& val)
 {
 	int size = val.size();
 	ostm.write(size);
@@ -766,7 +765,7 @@ typename file_ostream<same_endian_type>& operator << (typename file_ostream<same
 }
 
 template<typename same_endian_type>
-typename file_ostream<same_endian_type>& operator << (typename file_ostream<same_endian_type>& ostm, const char* val)
+ file_ostream<same_endian_type>& operator << ( file_ostream<same_endian_type>& ostm, const char* val)
 {
 	int size = std::strlen(val);
 	ostm.write(size);
@@ -801,7 +800,6 @@ public:
 		std::memcpy(reinterpret_cast<void*>(&vec[0]), reinterpret_cast<const void*>(&t2), sizeof(T));
 		write(vec);
 	}
-	template<>
 	void write(const std::vector<char>& vec)
 	{
 		m_vec.insert(m_vec.end(), vec.begin(), vec.end());
@@ -818,7 +816,7 @@ private:
 };
 
 template<typename same_endian_type, typename T>
-typename mem_ostream<same_endian_type>& operator << (typename mem_ostream<same_endian_type>& ostm, const T& val)
+ mem_ostream<same_endian_type>& operator << ( mem_ostream<same_endian_type>& ostm, const T& val)
 {
 	ostm.write(val);
 
@@ -826,7 +824,7 @@ typename mem_ostream<same_endian_type>& operator << (typename mem_ostream<same_e
 }
 
 template<typename same_endian_type>
-typename mem_ostream<same_endian_type>& operator << (typename mem_ostream<same_endian_type>& ostm, const std::string& val)
+ mem_ostream<same_endian_type>& operator << ( mem_ostream<same_endian_type>& ostm, const std::string& val)
 {
 	int size = val.size();
 	ostm.write(size);
@@ -840,7 +838,7 @@ typename mem_ostream<same_endian_type>& operator << (typename mem_ostream<same_e
 }
 
 template<typename same_endian_type>
-typename mem_ostream<same_endian_type>& operator << (typename mem_ostream<same_endian_type>& ostm, const char* val)
+ mem_ostream<same_endian_type>& operator << ( mem_ostream<same_endian_type>& ostm, const char* val)
 {
 	int size = std::strlen(val);
 	ostm.write(size);
@@ -875,7 +873,6 @@ public:
 		std::memcpy(reinterpret_cast<void*>(&vec[0]), reinterpret_cast<const void*>(&t2), sizeof(T));
 		write(vec);
 	}
-	template<>
 	void write(const std::vector<char>& vec)
 	{
 		m_vec.insert(m_vec.end(), vec.begin(), vec.end());
@@ -887,7 +884,12 @@ public:
 	}
 	bool write_to_file(const char* file)
 	{
+#ifdef _MSC_VER
+		std::FILE* fp = nullptr;
+		fopen_s(&fp, file, "wb");
+#else
 		std::FILE* fp = std::fopen(file, "wb");
+#endif
 		if (fp)
 		{
 			size_t size = std::fwrite(m_vec.data(), m_vec.size(), 1, fp);
@@ -905,7 +907,7 @@ private:
 };
 
 template<typename same_endian_type, typename T>
-typename memfile_ostream<same_endian_type>& operator << (typename memfile_ostream<same_endian_type>& ostm, const T& val)
+ memfile_ostream<same_endian_type>& operator << ( memfile_ostream<same_endian_type>& ostm, const T& val)
 {
 	ostm.write(val);
 
@@ -913,7 +915,7 @@ typename memfile_ostream<same_endian_type>& operator << (typename memfile_ostrea
 }
 
 template<typename same_endian_type>
-typename memfile_ostream<same_endian_type>& operator << (typename memfile_ostream<same_endian_type>& ostm, const std::string& val)
+ memfile_ostream<same_endian_type>& operator << ( memfile_ostream<same_endian_type>& ostm, const std::string& val)
 {
 	int size = val.size();
 	ostm.write(size);
@@ -927,7 +929,7 @@ typename memfile_ostream<same_endian_type>& operator << (typename memfile_ostrea
 }
 
 template<typename same_endian_type>
-typename memfile_ostream<same_endian_type>& operator << (typename memfile_ostream<same_endian_type>& ostm, const char* val)
+ memfile_ostream<same_endian_type>& operator << ( memfile_ostream<same_endian_type>& ostm, const char* val)
 {
 	int size = std::strlen(val);
 	ostm.write(size);
