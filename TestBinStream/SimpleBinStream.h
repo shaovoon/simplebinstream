@@ -11,6 +11,7 @@
 // version 0.9.6   : Using C File APIs, instead of STL file streams
 // version 0.9.7   : Add memfile_istream
 // version 0.9.8   : Fix GCC and Clang template errors
+// version 0.9.9   : Fix bug of getting previous value when reading empty string
 
 #ifndef SimpleBinStream_H
 #define SimpleBinStream_H
@@ -231,6 +232,8 @@ template<typename same_endian_type, typename T>
 template<typename same_endian_type>
  file_istream<same_endian_type>& operator >> ( file_istream<same_endian_type>& istm, std::string& val)
 {
+	val.clear();
+
 	int size = 0;
 	istm.read(size);
 
@@ -378,6 +381,8 @@ template<typename same_endian_type, typename T>
 template<typename same_endian_type>
 mem_istream<same_endian_type>& operator >> (mem_istream<same_endian_type>& istm, std::string& val)
 {
+	val.clear();
+
 	int size = 0;
 	istm.read(size);
 
@@ -671,6 +676,8 @@ template<typename same_endian_type, typename T>
 template<typename same_endian_type>
  memfile_istream<same_endian_type>& operator >> ( memfile_istream<same_endian_type>& istm, std::string& val)
 {
+	val.clear();
+
 	int size = 0;
 	istm.read(size);
 

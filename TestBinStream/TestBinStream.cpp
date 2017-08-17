@@ -5,6 +5,7 @@
 #include "SimpleBinStream.h"
 #include "CustomOperators.h"
 
+void TestMissingString();
 void TestMem();
 void TestMemPtr();
 void TestFile();
@@ -21,6 +22,8 @@ void TestMemFileCustomOperators();
 using namespace std;
 int main(int argc, char* argv[])
 {
+	TestMissingString();
+	std::cout << "=============" << std::endl;
 	/*TestMem();
 	std::cout << "=============" << std::endl;
 	TestMemPtr();
@@ -33,10 +36,10 @@ int main(int argc, char* argv[])
 	std::cout << "=============" << std::endl;
 	TestMemPtrCustomOperatorsOnVec();
 	std::cout << "=============" << std::endl;
-	TestFileCustomOperatorsOnVec();*/
+	TestFileCustomOperatorsOnVec();
 	std::cout << "=============" << std::endl;
 	TestMemFileCustomOperatorsOnVec();
-	/*std::cout << "=============" << std::endl;
+	std::cout << "=============" << std::endl;
 	TestMemCustomOperators();
 	std::cout << "=============" << std::endl;
 	TestMemPtrCustomOperators();
@@ -59,6 +62,21 @@ void TestMem()
 	in >> num1 >> num2 >> str;
 
 	cout << num1 << "," << num2 << "," << str << endl;
+}
+
+void TestMissingString()
+{
+	simple::mem_ostream<std::true_type> out;
+	out << "Jack" << "" << "Hello world!";
+
+	simple::mem_istream<std::true_type> in(out.get_internal_vec());
+	std::string str;
+	in >> str;
+	cout << str << ",";
+	in >> str;
+	cout << str << ",";
+	in >> str;
+	cout << str << ",";
 }
 
 void TestMemPtr()
