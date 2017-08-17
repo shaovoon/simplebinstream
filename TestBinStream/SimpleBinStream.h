@@ -524,6 +524,8 @@ template<typename same_endian_type, typename T>
 template<typename same_endian_type>
  ptr_istream<same_endian_type>& operator >> ( ptr_istream<same_endian_type>& istm, std::string& val)
 {
+	val.clear();
+	
 	int size = 0;
 	istm.read(size);
 
