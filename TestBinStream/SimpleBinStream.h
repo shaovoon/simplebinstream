@@ -12,6 +12,7 @@
 // version 0.9.7   : Add memfile_istream
 // version 0.9.8   : Fix GCC and Clang template errors
 // version 0.9.9   : Fix bug of getting previous value when reading empty string
+// version 1.0.0   : Fix buffer overrun bug when reading string (reported by imtrobin)
 
 #ifndef SimpleBinStream_H
 #define SimpleBinStream_H
