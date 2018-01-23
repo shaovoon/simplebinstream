@@ -30,3 +30,24 @@
 # Visual Studio files
 *.suo
 *.sdf
+
+*.pdb
+*.ipdb
+*.iobj
+*.ilk
+*.db
+*.VC
+README.txt
+
+*/[dD]ebug/
+*/[rR]elease/
+*/*/[dD]ebug/
+*/*/[rR]elease/
+*/*/*/[dD]ebug/
+*/*/*/[rR]elease/
+*/ipch/
+*/*/ipch/
+
+*.db-wal
+*.db-shm
+*.ipch

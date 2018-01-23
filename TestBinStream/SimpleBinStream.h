@@ -356,7 +356,7 @@ public:
 		if (eof())
 			throw std::runtime_error("Premature end of array!");
 
-		if ((m_index + str.size()) > m_vec.size())
+		if ((m_index + size) > m_vec.size())
 			throw std::runtime_error("Premature end of array!");
 
 		str.assign(&m_vec[m_index], size);
@@ -497,7 +497,7 @@ public:
 		if (eof())
 			throw std::runtime_error("Premature end of array!");
 
-		if ((m_index + str.size()) > m_size)
+		if ((m_index + size) > m_size)
 			throw std::runtime_error("Premature end of array!");
 
 		str.assign(&m_arr[m_index], size);
@@ -644,7 +644,7 @@ public:
 		if (eof())
 			throw std::runtime_error("Premature end of array!");
 
-		if ((m_index + str.size()) > m_size)
+		if ((m_index + size) > m_size)
 			throw std::runtime_error("Premature end of array!");
 
 		str.assign(&m_arr[m_index], size);
