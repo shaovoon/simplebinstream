@@ -278,7 +278,7 @@ public:
 	{
 		return m_index >= m_vec.size();
 	}
-	std::ifstream::pos_type tellg()
+	std::ifstream::pos_type tellg() const
 	{
 		return m_index;
 	}
@@ -424,7 +424,7 @@ public:
 	{
 		return m_index >= m_size;
 	}
-	std::ifstream::pos_type tellg()
+	std::ifstream::pos_type tellg() const
 	{
 		return m_index;
 	}
@@ -585,17 +585,31 @@ public:
 	{
 		return m_index >= m_size;
 	}
-	long tellg(std::FILE* input_file_ptr) const
+	std::ifstream::pos_type tellg() const
 	{
-		return std::ftell(input_file_ptr);
+		return m_index;
 	}
-	void seekg(std::FILE* input_file_ptr, long pos)
+	bool seekg(size_t pos)
 	{
-		std::fseek(input_file_ptr, pos, SEEK_SET);
+		if (pos < m_size)
+			m_index = pos;
+		else
+			return false;
+
+		return true;
 	}
-	void seekg(std::FILE* input_file_ptr, long offset, int way)
+	bool seekg(std::streamoff offset, std::ios_base::seekdir way)
 	{
-		std::fseek(input_file_ptr, offset, way);
+		if (way == std::ios_base::beg && offset < m_size)
+			m_index = offset;
+		else if (way == std::ios_base::cur && (m_index + offset) < m_size)
+			m_index += offset;
+		else if (way == std::ios_base::end && (m_size + offset) < m_size)
+			m_index = m_size + offset;
+		else
+			return false;
+
+		return true;
 	}
 
 	template<typename T>
@@ -656,9 +670,9 @@ public:
 private:
 	void compute_length(std::FILE* input_file_ptr)
 	{
-		seekg(input_file_ptr, 0, SEEK_END);
-		m_size = tellg(input_file_ptr);
-		seekg(input_file_ptr, 0, SEEK_SET);
+		std::fseek(input_file_ptr, 0, SEEK_END);
+		m_size = std::ftell(input_file_ptr);
+		std::fseek(input_file_ptr, 0, SEEK_SET);
 	}
 
 	char* m_arr;
