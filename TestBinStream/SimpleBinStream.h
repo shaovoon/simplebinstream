@@ -13,6 +13,8 @@
 // version 0.9.8   : Fix GCC and Clang template errors
 // version 0.9.9   : Fix bug of getting previous value when reading empty string
 // version 1.0.0   : Fix buffer overrun bug when reading string (reported by imtrobin)
+// version 1.0.1   : Fix memfile_istream tellg and seekg bug reported by macxfadz, 
+//                   use is_arithmetic instead of is_integral to determine swapping
 
 #ifndef SimpleBinStream_H
 #define SimpleBinStream_H
@@ -92,7 +94,7 @@ namespace simple
 	}
 	
 	template<typename T>
-	void swap_if_integral(T& val, std::true_type)
+	void swap_if_arithmetic(T& val, std::true_type)
 	{
 		switch(sizeof(T))
 		{
@@ -103,16 +105,17 @@ namespace simple
 	}
 	
 	template<typename T>
-	void swap_if_integral(T& val, std::false_type)
+	void swap_if_arithmetic(T& val, std::false_type)
 	{
-		// T is not integral so do nothing
+		// T is not arithmetic so do nothing
 	}
 
 	template<typename T>
 	void swap(T& val, std::false_type)
 	{
-		std::is_integral<T> is_integral_type;
-		swap_if_integral(val, is_integral_type);
+		std::is_arithmetic<T> is_integral_type;
+
+		swap_if_arithmetic(val, is_integral_type);
 	}
 	
 	template<typename T>

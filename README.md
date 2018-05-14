@@ -119,18 +119,18 @@ void swap(T& val, std::true_type)
 template<typename T>
 void swap(T& val, std::false_type)
 {
-    std::is_integral<T> is_integral_type;
-    swap_if_integral(val, is_integral_type);
+    std::is_arithmetic<T> is_integral_type;
+    swap_if_arithmetic(val, is_integral_type);
 }
 
 template<typename T>
-void swap_if_integral(T& val, std::false_type)
+void swap_if_arithmetic(T& val, std::false_type)
 {
-    // T is not integral so do nothing
+    // T is not arithmetic so do nothing
 }
 
 template<typename T>
-void swap_if_integral(T& val, std::true_type)
+void swap_if_arithmetic(T& val, std::true_type)
 {
     swap_endian<T, sizeof(T)>()(val);
 }
