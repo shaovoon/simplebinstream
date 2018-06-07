@@ -38,8 +38,24 @@ namespace simple
 	using BigEndian = std::integral_constant<Endian, Endian::Big>;
 	using LittleEndian = std::integral_constant<Endian, Endian::Little>;
 
+	struct SizeOf1 { };
+	struct SizeOf2 { };
+	struct SizeOf4 { };
+	struct SizeOf8 { };
+	struct UnknownSize { };
+
 	template<typename T>
-	void swap_endian8(T& ui)
+	void swap_endian(T& ui, UnknownSize)
+	{
+	}
+
+	template<typename T>
+	void swap_endian(T& ui, SizeOf1)
+	{
+	}
+
+	template<typename T>
+	void swap_endian(T& ui, SizeOf8)
 	{
 		union EightBytes
 		{
@@ -59,7 +75,7 @@ namespace simple
 	}
 
 	template<typename T>
-	void swap_endian4(T& ui)
+	void swap_endian(T& ui, SizeOf4)
 	{
 		union FourBytes
 		{
@@ -77,7 +93,7 @@ namespace simple
 	}
 
 	template<typename T>
-	void swap_endian2(T& ui)
+	void swap_endian(T& ui, SizeOf2)
 	{
 		union TwoBytes
 		{
@@ -92,16 +108,31 @@ namespace simple
 
 		ui = fb.ui;
 	}
+
+	template <class T>
+	using number_type =
+		typename std::conditional<
+		sizeof(T) == 1,
+		SizeOf1,
+		typename std::conditional<
+		sizeof(T) == 2,
+		SizeOf2,
+		typename std::conditional<
+		sizeof(T) == 4,
+		SizeOf4,
+		typename std::conditional<
+		sizeof(T) == 8,
+		SizeOf8,
+		UnknownSize
+		>::type
+		>::type
+		>::type
+		>::type;
 	
 	template<typename T>
 	void swap_if_arithmetic(T& val, std::true_type)
 	{
-		switch(sizeof(T))
-		{
-			case 2u: swap_endian2(val); break;
-			case 4u: swap_endian4(val); break;
-			case 8u: swap_endian8(val); break;
-		}
+		swap_endian(val, number_type<T>());
 	}
 	
 	template<typename T>
@@ -111,7 +142,7 @@ namespace simple
 	}
 
 	template<typename T>
-	void swap(T& val, std::false_type)
+	void swap_endian_if_same_endian_is_false(T& val, std::false_type)
 	{
 		std::is_arithmetic<T> is_integral_type;
 
@@ -119,7 +150,7 @@ namespace simple
 	}
 	
 	template<typename T>
-	void swap(T& val, std::true_type)
+	void swap_endian_if_same_endian_is_false(T& val, std::true_type)
 	{
 		// same endian so do nothing.
 	}
@@ -193,7 +224,7 @@ public:
 			throw std::runtime_error("Read Error!");
 		}
 		read_length += sizeof(T);
-		simple::swap(t, m_same_type);
+		simple::swap_endian_if_same_endian_is_false(t, m_same_type);
 	}
 	void read(typename std::vector<char>& vec)
 	{
@@ -324,7 +355,7 @@ public:
 
 		std::memcpy(reinterpret_cast<void*>(&t), &m_vec[m_index], sizeof(T));
 
-		simple::swap(t, m_same_type);
+		simple::swap_endian_if_same_endian_is_false(t, m_same_type);
 
 		m_index += sizeof(T);
 	}
@@ -465,7 +496,7 @@ public:
 
 		std::memcpy(reinterpret_cast<void*>(&t), &m_arr[m_index], sizeof(T));
 
-		simple::swap(t, m_same_type);
+		simple::swap_endian_if_same_endian_is_false(t, m_same_type);
 
 		m_index += sizeof(T);
 	}
@@ -626,7 +657,7 @@ public:
 
 		std::memcpy(reinterpret_cast<void*>(&t), &m_arr[m_index], sizeof(T));
 
-		simple::swap(t, m_same_type);
+		simple::swap_endian_if_same_endian_is_false(t, m_same_type);
 
 		m_index += sizeof(T);
 	}
@@ -752,7 +783,7 @@ public:
 	void write(const T& t)
 	{
 		T t2 = t;
-		simple::swap(t2, m_same_type);
+		simple::swap_endian_if_same_endian_is_false(t2, m_same_type);
 		std::fwrite(reinterpret_cast<const void*>(&t2), sizeof(T), 1, output_file_ptr);
 	}
 	void write(const std::vector<char>& vec)
@@ -823,7 +854,7 @@ public:
 	{
 		std::vector<char> vec(sizeof(T));
 		T t2 = t;
-		simple::swap(t2, m_same_type);
+		simple::swap_endian_if_same_endian_is_false(t2, m_same_type);
 		std::memcpy(reinterpret_cast<void*>(&vec[0]), reinterpret_cast<const void*>(&t2), sizeof(T));
 		write(vec);
 	}
@@ -896,7 +927,7 @@ public:
 	{
 		std::vector<char> vec(sizeof(T));
 		T t2 = t;
-		simple::swap(t2, m_same_type);
+		simple::swap_endian_if_same_endian_is_false(t2, m_same_type);
 		std::memcpy(reinterpret_cast<void*>(&vec[0]), reinterpret_cast<const void*>(&t2), sizeof(T));
 		write(vec);
 	}
