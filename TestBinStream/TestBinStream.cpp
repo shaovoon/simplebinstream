@@ -24,6 +24,8 @@ int main(int argc, char* argv[])
 {
 	TestMissingString();
 	std::cout << "=============" << std::endl;
+	
+	std::cout << "-------------" << std::endl;
 	/*
 	TestMem();
 	std::cout << "=============" << std::endl;
