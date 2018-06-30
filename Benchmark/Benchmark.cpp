@@ -28,12 +28,12 @@ class timer
 {
 public:
 	timer() = default;
-	void start_timing(const std::string& text_)
+	void start(const std::string& text_)
 	{
 		text = text_;
 		begin = std::chrono::high_resolution_clock::now();
 	}
-	void stop_timing()
+	void stop()
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		auto dur = end - begin;
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 
 		if (os.is_open())
 		{
-			stopwatch.start_timing("old::file_ostream");
+			stopwatch.start("old::file_ostream");
 			for (size_t k = 0; k < MAX_LOOP; ++k)
 			{
 				for (size_t i = 0; i < vec.size(); ++i)
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 					do_not_optimize_away(result.c_str());
 				}
 			}
-			stopwatch.stop_timing();
+			stopwatch.stop();
 		}
 		os.flush();
 		os.close();
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 		if (is.is_open())
 		{
 			Product product;
-			stopwatch.start_timing("old::file_istream");
+			stopwatch.start("old::file_istream");
 			try
 			{
 				while (!is.eof())
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 			{
 				fprintf(stderr, "%s\n", e.what());
 			}
-			stopwatch.stop_timing();
+			stopwatch.stop();
 		}
 	}
 	{
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
 		if (os.is_open())
 		{
-			stopwatch.start_timing("new::file_ostream");
+			stopwatch.start("new::file_ostream");
 			for (size_t k = 0; k < MAX_LOOP; ++k)
 			{
 				for (size_t i = 0; i < vec.size(); ++i)
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 					do_not_optimize_away(result.c_str());
 				}
 			}
-			stopwatch.stop_timing();
+			stopwatch.stop();
 		}
 		os.flush();
 		os.close();
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 		if (is.is_open())
 		{
 			Product product;
-			stopwatch.start_timing("new::file_istream");
+			stopwatch.start("new::file_istream");
 			try
 			{
 				while (!is.eof())
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
 			{
 				fprintf(stderr, "%s\n", e.what());
 			}
-			stopwatch.stop_timing();
+			stopwatch.stop();
 		}
 
 		is.close();
@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
 
 		memfile_ostream<std::true_type> os;
 
-		stopwatch.start_timing("new::memfile_ostream");
+		stopwatch.start("new::memfile_ostream");
 		for (size_t k = 0; k < MAX_LOOP; ++k)
 		{
 			for (size_t i = 0; i < vec.size(); ++i)
@@ -176,14 +176,14 @@ int main(int argc, char *argv[])
 			}
 		}
 		os.write_to_file(mem_file.c_str());
-		stopwatch.stop_timing();
+		stopwatch.stop();
 
 		memfile_istream<std::true_type> is_copy(mem_file.c_str());
 
 		if (is_copy.is_open())
 		{
 			Product product;
-			stopwatch.start_timing("new::memfile_istream");
+			stopwatch.start("new::memfile_istream");
 			try
 			{
 				while (!is_copy.eof())
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 			{
 				fprintf(stderr, "%s\n", e.what());
 			}
-			stopwatch.stop_timing();
+			stopwatch.stop();
 		}
 		is_copy.close();
 	}
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 
 		mem_ostream<std::true_type> os;
 
-		stopwatch.start_timing("new::mem_ostream");
+		stopwatch.start("new::mem_ostream");
 		for (size_t k = 0; k < MAX_LOOP; ++k)
 		{
 			for (size_t i = 0; i < vec.size(); ++i)
@@ -215,12 +215,12 @@ int main(int argc, char *argv[])
 				do_not_optimize_away(result.c_str());
 			}
 		}
-		stopwatch.stop_timing();
+		stopwatch.stop();
 
 		mem_istream<std::true_type> is(os.get_internal_vec());
 
 		Product product;
-		stopwatch.start_timing("new::mem_istream");
+		stopwatch.start("new::mem_istream");
 		try
 		{
 			while (!is.eof())
@@ -232,11 +232,11 @@ int main(int argc, char *argv[])
 		{
 			fprintf(stderr, "%s\n", e.what());
 		}
-		stopwatch.stop_timing();
+		stopwatch.stop();
 
 		ptr_istream<std::true_type> ptr_is(os.get_internal_vec());
 
-		stopwatch.start_timing("new::ptr_istream");
+		stopwatch.start("new::ptr_istream");
 		try
 		{
 			while (!ptr_is.eof())
@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
 		{
 			fprintf(stderr, "%s\n", e.what());
 		}
-		stopwatch.stop_timing();
+		stopwatch.stop();
 	}
 
 	return 0;
