@@ -15,6 +15,8 @@
 // version 1.0.0   : Fix buffer overrun bug when reading string (reported by imtrobin)
 // version 1.0.1   : Fix memfile_istream tellg and seekg bug reported by macxfadz, 
 //                   use is_arithmetic instead of is_integral to determine swapping
+// version 1.0.2   : Add overloaded open functions that take in file parameter in 
+//                   wide char type.(only available on win32)
 
 #ifndef SimpleBinStream_H
 #define SimpleBinStream_H
@@ -164,6 +166,12 @@ public:
 	{
 		open(file);
 	}
+#ifdef _MSC_VER
+	file_istream(const wchar_t * file) : input_file_ptr(nullptr), file_size(0L), read_length(0L)
+	{
+		open(file);
+	}
+#endif
 	~file_istream()
 	{
 		close();
@@ -179,6 +187,15 @@ public:
 #endif
 		compute_length();
 	}
+#ifdef _MSC_VER
+	void open(const wchar_t * file)
+	{
+		close();
+		input_file_ptr = nullptr;
+		_wfopen_s(&input_file_ptr, file, L"rb");
+		compute_length();
+	}
+#endif
 	void close()
 	{
 		if (input_file_ptr)
@@ -581,6 +598,12 @@ public:
 	{
 		open(file);
 	}
+#ifdef _MSC_VER
+	memfile_istream(const wchar_t * file) : m_arr(nullptr), m_size(0), m_index(0)
+	{
+		open(file);
+	}
+#endif
 	~memfile_istream()
 	{
 		close();
@@ -599,6 +622,18 @@ public:
 		std::fread(m_arr, m_size, 1, input_file_ptr);
 		fclose(input_file_ptr);
 	}
+#ifdef _MSC_VER
+	void open(const wchar_t * file)
+	{
+		close();
+		std::FILE* input_file_ptr = nullptr;
+		_wfopen_s(&input_file_ptr, file, L"rb");
+		compute_length(input_file_ptr);
+		m_arr = new char[m_size];
+		std::fread(m_arr, m_size, 1, input_file_ptr);
+		fclose(input_file_ptr);
+	}
+#endif
 	void close()
 	{
 		if (m_arr)
@@ -749,6 +784,12 @@ public:
 	{
 		open(file);
 	}
+#ifdef _MSC_VER
+	file_ostream(const wchar_t * file) : output_file_ptr(nullptr)
+	{
+		open(file);
+	}
+#endif
 	~file_ostream()
 	{
 		close();
@@ -763,6 +804,14 @@ public:
 		output_file_ptr = std::fopen(file, "wb");
 #endif
 	}
+#ifdef _MSC_VER
+	void open(const wchar_t * file)
+	{
+		close();
+		output_file_ptr = nullptr;
+		_wfopen_s(&output_file_ptr, file, L"wb");
+	}
+#endif
 	void flush()
 	{
 		std::fflush(output_file_ptr);
@@ -958,6 +1007,22 @@ public:
 		}
 		return false;
 	}
+#ifdef _MSC_VER
+	bool write_to_file(const wchar_t* file)
+	{
+		std::FILE* fp = nullptr;
+		_wfopen_s(&fp, file, L"wb");
+		if (fp)
+		{
+			size_t size = std::fwrite(m_vec.data(), m_vec.size(), 1, fp);
+			std::fflush(fp);
+			std::fclose(fp);
+			m_vec.clear();
+			return size == 1u;
+		}
+		return false;
+	}
+#endif
 
 private:
 	std::vector<char> m_vec;
