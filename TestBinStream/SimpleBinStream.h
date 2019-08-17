@@ -1,6 +1,6 @@
 // The MIT License (MIT)
-// Simplistic Binary Streams 0.9
-// Copyright (C) 2014 - 2016, by Wong Shao Voon (shaovoon@yahoo.com)
+// Simplistic Binary Streams 1.0.3
+// Copyright (C) 2014 - 2019, by Wong Shao Voon (shaovoon@yahoo.com)
 //
 // http://opensource.org/licenses/MIT
 //
@@ -17,6 +17,7 @@
 //                   use is_arithmetic instead of is_integral to determine swapping
 // version 1.0.2   : Add overloaded open functions that take in file parameter in 
 //                   wide char type.(only available on win32)
+// version 1.0.3   : Remove <iostream> header
 
 #ifndef SimpleBinStream_H
 #define SimpleBinStream_H
@@ -26,7 +27,6 @@
 #include <string>
 #include <cstring>
 #include <stdexcept>
-#include <iostream>
 #include <stdint.h>
 #include <cstdio>
 
