@@ -18,11 +18,11 @@
 // version 1.0.2   : Add overloaded open functions that take in file parameter in 
 //                   wide char type.(only available on win32)
 // version 1.0.3   : Remove <iostream> header
-// version 1.0.4   : Remove <fstream> header
 
 #ifndef SimpleBinStream_H
 #define SimpleBinStream_H
 
+#include <fstream>
 #include <vector>
 #include <string>
 #include <cstring>
@@ -329,7 +329,7 @@ public:
 	{
 		return m_index >= m_vec.size();
 	}
-	size_t tellg() const
+	std::ifstream::pos_type tellg() const
 	{
 		return m_index;
 	}
@@ -475,7 +475,7 @@ public:
 	{
 		return m_index >= m_size;
 	}
-	size_t tellg() const
+	std::ifstream::pos_type tellg() const
 	{
 		return m_index;
 	}
@@ -654,7 +654,7 @@ public:
 	{
 		return m_index >= m_size;
 	}
-	size_t tellg() const
+	std::ifstream::pos_type tellg() const
 	{
 		return m_index;
 	}
