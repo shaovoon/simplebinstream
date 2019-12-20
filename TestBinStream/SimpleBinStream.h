@@ -18,6 +18,7 @@
 // version 1.0.2   : Add overloaded open functions that take in file parameter in 
 //                   wide char type.(only available on win32)
 // version 1.0.3   : Remove <iostream> header
+// version 1.0.4   : Fixed file_istream's seekg() and added writeat() to mem_ostream and memfile_ostream. Thanks Festering from CodeProject.
 
 #ifndef SimpleBinStream_H
 #define SimpleBinStream_H
@@ -227,10 +228,17 @@ public:
 	void seekg (long pos)
 	{
 		std::fseek(input_file_ptr, pos, SEEK_SET);
+		read_length = pos;
 	}
 	void seekg (long offset, int way)
 	{
 		std::fseek(input_file_ptr, offset, way);
+		if (way == SEEK_END)
+			read_length = file_size - offset;
+		else if (way == SEEK_CUR)
+			read_length += offset;
+		else
+			read_length = offset;
 	}
 
 	template<typename T>
@@ -916,7 +924,21 @@ public:
 		for(size_t i=0; i<size; ++i)
 			m_vec.push_back(p[i]);
 	}
+	template<typename T>
+	void writeat(size_t pos, const T& t)
+	{
+		std::vector<char> vec(sizeof(T));
+		T t2 = t;
+		simple::swap_endian_if_same_endian_is_false(t2, m_same_type);
+		std::memcpy(reinterpret_cast<void*>(&vec[0]), reinterpret_cast<const void*>(&t2), sizeof(T));
+		writeat(pos, vec);
+	}
 
+	void writeat(size_t pos, const std::vector<char>& vec)
+	{
+		for (size_t n = 0, count = vec.size(); n < count; n++)
+			m_vec[pos++] = vec[n];
+	}
 private:
 	std::vector<char> m_vec;
 	same_endian_type m_same_type;
@@ -988,6 +1010,21 @@ public:
 	{
 		for (size_t i = 0; i<size; ++i)
 			m_vec.push_back(p[i]);
+	}
+	template<typename T>
+	void writeat(size_t pos, const T& t)
+	{
+		std::vector<char> vec(sizeof(T));
+		T t2 = t;
+		simple::swap_endian_if_same_endian_is_false(t2, m_same_type);
+		std::memcpy(reinterpret_cast<void*>(&vec[0]), reinterpret_cast<const void*>(&t2), sizeof(T));
+		writeat(pos, vec);
+	}
+
+	void writeat(size_t pos, const std::vector<char>& vec)
+	{
+		for (size_t n = 0, count = vec.size(); n < count; n++)
+			m_vec[pos++] = vec[n];
 	}
 	bool write_to_file(const char* file)
 	{
